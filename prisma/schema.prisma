@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum HeroSlideType {
+  IMAGE
+  VIDEO
+}
+
+model HeroSlide {
+  id        String        @id @default(cuid())
+  sortOrder Int           @default(0)
+  type      HeroSlideType
+  mediaUrl  String
+  posterUrl String?
+  title     String?
+  ctaUrl    String?
+  ctaLabel  String?
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model SiteSettings {
+  id            String   @id @default("default")
+  heroVideoUrl  String?
+  heroPosterUrl String?
+  bookTableUrl  String?
+  contactEmail  String?
+  phone         String?
+  whatsapp      String?
+  instagram     String?
+  mapsUrl       String?
+  updatedAt     DateTime @updatedAt
+}
+
+model MenuCategory {
+  id        String     @id @default(cuid())
+  sortOrder Int        @default(0)
+  name      String
+  items     MenuItem[]
+}
+
+model MenuItem {
+  id          String       @id @default(cuid())
+  categoryId  String
+  category    MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  price       String?
+  imageUrl    String?
+  sortOrder   Int          @default(0)
+}
+
+model GalleryImage {
+  id        String @id @default(cuid())
+  url       String
+  alt       String?
+  sortOrder Int    @default(0)
+}

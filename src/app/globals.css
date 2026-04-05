@@ -1,26 +1,105 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #040a12;
+  --foreground: #e8f7f0;
+
+  /* Layered soft shadows — depth without harsh black slabs */
+  --ff-shadow-soft:
+    0 2px 8px -2px rgba(0, 0, 0, 0.35),
+    0 12px 40px -12px rgba(0, 0, 0, 0.42),
+    0 0 0 1px rgba(124, 245, 198, 0.05);
+  --ff-shadow-soft-hover:
+    0 6px 24px -6px rgba(0, 0, 0, 0.48),
+    0 22px 56px -16px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(212, 255, 92, 0.1),
+    0 0 48px -12px rgba(124, 245, 198, 0.1);
+  --ff-shadow-primary:
+    0 4px 16px -2px rgba(200, 255, 120, 0.22),
+    0 14px 36px -8px rgba(0, 0, 0, 0.45);
+  --ff-shadow-bar:
+    0 -4px 28px -4px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(212, 255, 92, 0.08),
+    0 16px 48px -12px rgba(0, 0, 0, 0.38);
+  --ff-shadow-glow-sm: 0 0 28px -4px rgba(200, 255, 120, 0.18);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-dm);
   --font-mono: var(--font-geist-mono);
+
+  --color-ff-void: #03080f;
+  --color-ff-hero-void: #040a12;
+  --color-ff-deep: #071018;
+  --color-ff-forest: #0c1f18;
+  --color-ff-glow: #d4ff5c;
+  --color-ff-glow-dim: #9fe04a;
+  --color-ff-mint: #7cf5c6;
+  --color-ff-mist: #b8d4c8;
+  --color-ff-amber: #f0c85c;
+  --color-ff-violet: #6b5cff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 }
 
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
-  background: var(--background);
+  background: radial-gradient(ellipse 120% 80% at 50% -20%, rgba(124, 245, 198, 0.08), transparent),
+    radial-gradient(ellipse 80% 50% at 100% 50%, rgba(107, 92, 255, 0.06), transparent),
+    var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-dm), system-ui, sans-serif;
+}
+
+/* Card depth + gentle lift on hover (disabled when user prefers reduced motion) */
+.ff-card {
+  box-shadow: var(--ff-shadow-soft);
+  transition:
+    box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s ease,
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ff-card-interactive:hover {
+  box-shadow: var(--ff-shadow-soft-hover);
+}
+
+.ff-shadow-soft {
+  box-shadow: var(--ff-shadow-soft);
+}
+
+.ff-shadow-primary {
+  box-shadow: var(--ff-shadow-primary);
+}
+
+.ff-shadow-bar {
+  box-shadow: var(--ff-shadow-bar);
+}
+
+.ff-shadow-glow-sm {
+  box-shadow: var(--ff-shadow-glow-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ff-card,
+  .ff-card-interactive {
+    transition: none;
+  }
+
+  .ff-card-interactive:hover {
+    box-shadow: var(--ff-shadow-soft);
+  }
 }
