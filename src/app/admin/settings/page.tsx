@@ -47,27 +47,38 @@ export default async function AdminSettingsPage() {
         </fieldset>
 
         <fieldset className="ff-card space-y-4 rounded-2xl border border-ff-glow/15 bg-ff-deep/40 p-6">
-          <legend className="px-1 text-sm font-semibold text-ff-mint">Sticky bar</legend>
+          <legend className="px-1 text-sm font-semibold text-ff-mint">Home sticky bar (mobile)</legend>
+          <p className="text-xs text-ff-mist/75">
+            These values are saved in the database and appear on the public site as buttons under{" "}
+            <span className="text-ff-mint">Book table</span> (phone opens the dialer, WhatsApp / Instagram /
+            Location open in a new tab). Leave a field empty to hide that button.
+          </p>
           <Field
             label="Book table link"
             name="bookTableUrl"
             defaultValue={row?.bookTableUrl ?? "#book"}
             placeholder="#book or https://…"
           />
-          <Field label="Phone" name="phone" defaultValue={row?.phone ?? ""} placeholder="+91…" />
           <Field
-            label="WhatsApp (number or https://wa.me/…)"
+            label="Phone (shown as Phone — tap to call)"
+            name="phone"
+            defaultValue={row?.phone ?? ""}
+            placeholder="+91… or local number"
+          />
+          <Field
+            label="WhatsApp (number or full https://wa.me/… link)"
             name="whatsapp"
             defaultValue={row?.whatsapp ?? ""}
+            placeholder="9198xxxxxxx"
           />
           <Field
-            label="Instagram URL"
+            label="Instagram (profile or post URL)"
             name="instagram"
             defaultValue={row?.instagram ?? ""}
-            placeholder="https://instagram.com/…"
+            placeholder="https://instagram.com/yourhandle"
           />
           <Field
-            label="Maps / location URL"
+            label="Location (Google Maps or Apple Maps link)"
             name="mapsUrl"
             defaultValue={row?.mapsUrl ?? ""}
             placeholder="https://maps.google.com/…"

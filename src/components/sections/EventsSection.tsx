@@ -7,19 +7,6 @@ type Props = {
   offers: BassikOffer[];
 };
 
-function formatDate(iso: string | null) {
-  if (!iso) return null;
-  try {
-    return new Intl.DateTimeFormat("en-IN", {
-      weekday: "short",
-      day: "numeric",
-      month: "short",
-    }).format(new Date(iso));
-  } catch {
-    return null;
-  }
-}
-
 export function EventsSection({ offers }: Props) {
   return (
     <SectionReveal
@@ -52,7 +39,7 @@ export function EventsSection({ offers }: Props) {
             </p>
           </FadeInChild>
         ) : (
-          <EventOffersRow offers={offers} formatDate={formatDate} />
+          <EventOffersRow offers={offers} />
         )}
       </div>
     </SectionReveal>

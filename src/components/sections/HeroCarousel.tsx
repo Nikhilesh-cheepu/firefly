@@ -2,10 +2,8 @@
 
 import type { HeroSlide, HeroSlideType } from "@prisma/client";
 import { motion, useReducedMotion } from "framer-motion";
-import Link from "next/link";
-import type { MutableRefObject } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FireflyLogo } from "@/components/FireflyLogo";
+import type { MutableRefObject, ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 export type HeroCarouselProps = {
   slides: HeroSlide[];
@@ -23,7 +21,246 @@ type NormalizedSlide = {
   ctaLabel: string | null;
 };
 
+type LoopSlide = NormalizedSlide & { instanceKey: string };
+
 const HINT_KEY = "firefly-hero-swipe-hint";
+
+/** Slide strip width fraction (used only for non–snap-center fallbacks). */
+const SLIDE_VIEWPORT_FRAC = 0.86;
+
+function slideStripWidthPx(): number {
+  if (typeof window === "undefined") return 0;
+  return Math.round(window.innerWidth * SLIDE_VIEWPORT_FRAC);
+}
+
+function getClosestSlideIndex(container: HTMLElement): number {
+  const children = [...container.children] as HTMLElement[];
+  if (children.length === 0) return 0;
+  const scrollCenter = container.scrollLeft + container.clientWidth / 2;
+  let bestIdx = 0;
+  let best = Infinity;
+  children.forEach((child, i) => {
+    const mid = child.offsetLeft + child.offsetWidth / 2;
+    const d = Math.abs(mid - scrollCenter);
+    if (d < best) {
+      best = d;
+      bestIdx = i;
+    }
+  });
+  return bestIdx;
+}
+
+function scrollToSlideIndex(
+  container: HTMLElement,
+  index: number,
+  instant: boolean,
+) {
+  const child = container.children[index] as HTMLElement | undefined;
+  if (!child) return;
+  const left = child.offsetLeft + child.offsetWidth / 2 - container.clientWidth / 2;
+  container.scrollTo({ left: Math.max(0, left), behavior: instant ? "auto" : "smooth" });
+}
+
+function extendedToLogical(extIdx: number, nSlides: number): number {
+  if (extIdx === 0) return nSlides - 1;
+  if (extIdx === nSlides + 1) return 0;
+  return extIdx - 1;
+}
+
+function IconVolumeOn({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M11 5L6 9H2v6h4l5 4V5zm7.54 3.46l-1.42-1.42a6.98 6.98 0 010 9.9l1.42 1.42a8.98 8.98 0 000-12.72zm-2.83 2.83l-1.41-1.41a3 3 0 000 4.24l1.41-1.41a1 1 0 000-1.42z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function IconVolumeOff({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 4v-5.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.94 8.94 0 003.9-2.28L19.73 21 21 19.73l-9-9L4.27 3zM12 4.09L9.91 6.18 12 8.27V4.09z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function HeroSoundToggle({
+  soundEnabled,
+  setSoundEnabled,
+  videoRefs,
+  activeInstanceKey,
+}: {
+  soundEnabled: boolean;
+  setSoundEnabled: (v: boolean) => void;
+  videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
+  activeInstanceKey: string;
+}) {
+  return (
+    <div className="pointer-events-none absolute bottom-[calc(7.25rem+env(safe-area-inset-bottom))] right-3 z-30 md:right-5">
+      <button
+        type="button"
+        aria-label={soundEnabled ? "Mute hero videos" : "Unmute hero videos"}
+        aria-pressed={soundEnabled}
+        onClick={() => {
+          const next = !soundEnabled;
+          setSoundEnabled(next);
+          if (next && activeInstanceKey) {
+            queueMicrotask(() => {
+              const v = videoRefs.current.get(activeInstanceKey);
+              if (v) {
+                v.muted = false;
+                void v.play().catch(() => {});
+              }
+            });
+          }
+        }}
+        className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-ff-glow/40 bg-[#03080f]/85 text-ff-glow shadow-[0_0_18px_rgba(200,255,120,0.16)] backdrop-blur-md transition hover:border-ff-mint/50 hover:text-ff-mint"
+      >
+        {soundEnabled ? <IconVolumeOn /> : <IconVolumeOff />}
+      </button>
+    </div>
+  );
+}
+
+function mobileHeroMaxHeightClass() {
+  return "max-h-[min(100dvh,100svh)]";
+}
+
+function PortraitHeroFrame({ children }: { children: ReactNode }) {
+  return (
+    <div
+      className={`relative mx-auto aspect-[9/16] w-[min(92vw,calc(min(100dvh,100svh)*9/16))] ${mobileHeroMaxHeightClass()} max-w-full`}
+    >
+      {children}
+    </div>
+  );
+}
+
+function HeroMediaCard({ children }: { children: ReactNode }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border-2 border-ff-glow/50 bg-black/20 shadow-[0_0_0_1px_rgba(124,245,198,0.12),0_12px_40px_rgba(0,0,0,0.55)] ring-1 ring-ff-mint/15">
+      {children}
+    </div>
+  );
+}
+
+function HeroBackdrop({
+  slide,
+  instanceKey,
+  activeInstanceKey,
+  soundEnabled,
+  videoRefs,
+}: {
+  slide: NormalizedSlide;
+  instanceKey: string;
+  activeInstanceKey: string;
+  soundEnabled: boolean;
+  videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
+}) {
+  const audible = soundEnabled && instanceKey === activeInstanceKey;
+  if (slide.type === "VIDEO") {
+    return (
+      <HeroMediaCard>
+        <PortraitHeroFrame>
+          <video
+            ref={(el) => {
+              videoRefs.current.set(instanceKey, el);
+            }}
+            className="h-full w-full object-contain"
+            src={slide.mediaUrl}
+            poster={slide.posterUrl ?? undefined}
+            autoPlay
+            muted={!audible}
+            loop
+            playsInline
+          />
+        </PortraitHeroFrame>
+      </HeroMediaCard>
+    );
+  }
+  return (
+    <HeroMediaCard>
+      <PortraitHeroFrame>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={slide.mediaUrl} alt="" className="h-full w-full object-contain" />
+      </PortraitHeroFrame>
+    </HeroMediaCard>
+  );
+}
+
+function HeroSlideMedia({
+  slide,
+  instanceKey,
+  activeInstanceKey,
+  soundEnabled,
+  videoRefs,
+}: {
+  slide: NormalizedSlide;
+  instanceKey: string;
+  activeInstanceKey: string;
+  soundEnabled: boolean;
+  videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
+}) {
+  const audible = soundEnabled && instanceKey === activeInstanceKey;
+  if (slide.type === "VIDEO") {
+    return (
+      <video
+        ref={(el) => {
+          videoRefs.current.set(instanceKey, el);
+        }}
+        className="h-full w-full object-contain"
+        src={slide.mediaUrl}
+        poster={slide.posterUrl ?? undefined}
+        muted={!audible}
+        loop
+        playsInline
+        preload="metadata"
+      />
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={slide.mediaUrl} alt="" className="h-full w-full object-contain" />
+  );
+}
+
+function HeroSlideColumn({
+  loopItem,
+  videoRefs,
+  activeInstanceKey,
+  soundEnabled,
+}: {
+  loopItem: LoopSlide;
+  videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
+  activeInstanceKey: string;
+  soundEnabled: boolean;
+}) {
+  return (
+    <div className="flex h-full w-[86vw] max-w-[min(86vw,calc(min(100dvh,100svh)*9/16+48px))] shrink-0 snap-center items-center justify-center px-1">
+      <div
+        data-slide-key={loopItem.instanceKey}
+        className="flex w-full items-center justify-center"
+      >
+        <HeroMediaCard>
+          <PortraitHeroFrame>
+            <HeroSlideMedia
+              slide={loopItem}
+              instanceKey={loopItem.instanceKey}
+              activeInstanceKey={activeInstanceKey}
+              soundEnabled={soundEnabled}
+              videoRefs={videoRefs}
+            />
+          </PortraitHeroFrame>
+        </HeroMediaCard>
+      </div>
+    </div>
+  );
+}
 
 export function HeroCarousel({
   slides,
@@ -32,8 +269,15 @@ export function HeroCarousel({
 }: HeroCarouselProps) {
   const reduceMotion = useReducedMotion();
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(0);
+  const isJumpingRef = useRef(false);
+  const scrollEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevLogicalRef = useRef(0);
+  const activeLogicalRef = useRef(0);
+
+  const [activeLogical, setActiveLogical] = useState(0);
+  const [activeInstanceKey, setActiveInstanceKey] = useState("");
   const [hintVisible, setHintVisible] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(false);
   const videoRefs = useRef<Map<string, HTMLVideoElement | null>>(new Map());
 
   const normalized = useMemo<NormalizedSlide[]>(() => {
@@ -77,46 +321,178 @@ export function HeroCarousel({
     return [];
   }, [slides, fallbackVideo, fallbackPoster]);
 
-  const multi = normalized.length > 1 && !reduceMotion;
+  const loopSlides = useMemo<LoopSlide[] | null>(() => {
+    if (normalized.length < 2 || reduceMotion) return null;
+    const n = normalized.length;
+    const last = normalized[n - 1]!;
+    const first = normalized[0]!;
+    return [
+      { ...last, instanceKey: `${last.key}__loopL` },
+      ...normalized.map((s) => ({ ...s, instanceKey: s.key })),
+      { ...first, instanceKey: `${first.key}__loopR` },
+    ];
+  }, [normalized, reduceMotion]);
+
+  type CarouselMode = "empty" | "single" | "simple" | "infinite";
+  const mode: CarouselMode = useMemo(() => {
+    const n = normalized.length;
+    if (n === 0) return "empty";
+    if (n === 1) return "single";
+    if (reduceMotion) return "simple";
+    return "infinite";
+  }, [normalized.length, reduceMotion]);
+
+  const carouselMulti = mode === "simple" || mode === "infinite";
 
   useEffect(() => {
-    if (typeof window === "undefined" || !multi) return;
+    activeLogicalRef.current = activeLogical;
+  }, [activeLogical]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !carouselMulti) return;
     if (window.sessionStorage.getItem(HINT_KEY) === "1") return;
-    const show = window.setTimeout(() => setHintVisible(true), 0);
-    const hide = window.setTimeout(() => setHintVisible(false), 9000);
+    const show = window.setTimeout(() => setHintVisible(true), 400);
+    const hide = window.setTimeout(() => setHintVisible(false), 7000);
     return () => {
       window.clearTimeout(show);
       window.clearTimeout(hide);
     };
-  }, [multi]);
+  }, [carouselMulti]);
 
   const dismissHint = useCallback(() => {
     setHintVisible(false);
     if (typeof window !== "undefined") window.sessionStorage.setItem(HINT_KEY, "1");
   }, []);
 
-  const syncActiveFromScroll = useCallback(() => {
+  const applyInfiniteScrollEnd = useCallback(() => {
     const el = scrollerRef.current;
-    if (!el) return;
-    const w = el.clientWidth || 1;
-    const i = Math.round(el.scrollLeft / w);
-    setActive(Math.max(0, Math.min(i, normalized.length - 1)));
-  }, [normalized.length]);
+    if (!el || !loopSlides || isJumpingRef.current) return;
+    const n = normalized.length;
+    const idx = getClosestSlideIndex(el);
+
+    if (idx === 0) {
+      isJumpingRef.current = true;
+      scrollToSlideIndex(el, n, true);
+      const logicalN = n - 1;
+      setActiveLogical(logicalN);
+      setActiveInstanceKey(loopSlides[n]!.instanceKey);
+      prevLogicalRef.current = logicalN;
+      requestAnimationFrame(() => {
+        isJumpingRef.current = false;
+      });
+      return;
+    }
+    if (idx === n + 1) {
+      isJumpingRef.current = true;
+      scrollToSlideIndex(el, 1, true);
+      setActiveLogical(0);
+      setActiveInstanceKey(loopSlides[1]!.instanceKey);
+      prevLogicalRef.current = 0;
+      requestAnimationFrame(() => {
+        isJumpingRef.current = false;
+      });
+      return;
+    }
+
+    const logical = extendedToLogical(idx, n);
+    const inst = loopSlides[idx]!.instanceKey;
+    if (logical !== prevLogicalRef.current) {
+      prevLogicalRef.current = logical;
+    }
+    setActiveLogical(logical);
+    setActiveInstanceKey(inst);
+  }, [loopSlides, normalized.length]);
+
+  const scheduleInfiniteScrollEnd = useCallback(() => {
+    if (scrollEndTimerRef.current) clearTimeout(scrollEndTimerRef.current);
+    scrollEndTimerRef.current = setTimeout(applyInfiniteScrollEnd, 70);
+  }, [applyInfiniteScrollEnd]);
+
+  useLayoutEffect(() => {
+    const el = scrollerRef.current;
+    if (!el || !carouselMulti) return;
+    if (mode === "infinite" && loopSlides) {
+      scrollToSlideIndex(el, 1, true);
+      prevLogicalRef.current = 0;
+      queueMicrotask(() => {
+        setActiveLogical(0);
+        setActiveInstanceKey(loopSlides[1]!.instanceKey);
+      });
+    } else if (mode === "simple") {
+      scrollToSlideIndex(el, 0, true);
+      prevLogicalRef.current = 0;
+      queueMicrotask(() => {
+        setActiveLogical(0);
+        setActiveInstanceKey(normalized[0]!.key);
+      });
+    }
+  }, [mode, loopSlides, carouselMulti, normalized]);
 
   useEffect(() => {
     const el = scrollerRef.current;
-    if (!el) return;
-    const raf = requestAnimationFrame(() => syncActiveFromScroll());
-    el.addEventListener("scroll", syncActiveFromScroll, { passive: true });
-    return () => {
-      cancelAnimationFrame(raf);
-      el.removeEventListener("scroll", syncActiveFromScroll);
+    if (!el || !carouselMulti) return;
+
+    const onScroll = () => {
+      if (isJumpingRef.current) return;
+      dismissHint();
+
+      if (mode === "simple") {
+        const idx = getClosestSlideIndex(el);
+        setActiveLogical(idx);
+        setActiveInstanceKey(normalized[idx]?.key ?? "");
+        if (idx !== prevLogicalRef.current) {
+          prevLogicalRef.current = idx;
+        }
+        return;
+      }
+
+      if (mode === "infinite" && loopSlides) {
+        const n = normalized.length;
+        const idx = getClosestSlideIndex(el);
+        if (idx > 0 && idx < n + 1) {
+          const logical = extendedToLogical(idx, n);
+          setActiveLogical(logical);
+          setActiveInstanceKey(loopSlides[idx]!.instanceKey);
+        }
+        scheduleInfiniteScrollEnd();
+      }
     };
-  }, [syncActiveFromScroll, normalized.length]);
+
+    const onScrollEndEv = () => {
+      if (mode === "infinite") applyInfiniteScrollEnd();
+    };
+
+    el.addEventListener("scroll", onScroll, { passive: true });
+    el.addEventListener("scrollend", onScrollEndEv);
+
+    const onResize = () => {
+      if (mode === "infinite" && loopSlides) {
+        scrollToSlideIndex(el, activeLogicalRef.current + 1, true);
+      } else if (mode === "simple") {
+        scrollToSlideIndex(el, activeLogicalRef.current, true);
+      }
+    };
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      el.removeEventListener("scrollend", onScrollEndEv);
+      window.removeEventListener("resize", onResize);
+      if (scrollEndTimerRef.current) clearTimeout(scrollEndTimerRef.current);
+    };
+  }, [
+    mode,
+    carouselMulti,
+    loopSlides,
+    normalized,
+    dismissHint,
+    scheduleInfiniteScrollEnd,
+    applyInfiniteScrollEnd,
+  ]);
 
   useEffect(() => {
     const el = scrollerRef.current;
-    if (!el || reduceMotion) return;
+    if (!el || !carouselMulti) return;
 
     const obs = new IntersectionObserver(
       (entries) => {
@@ -125,110 +501,184 @@ export function HeroCarousel({
           if (!id) return;
           const v = videoRefs.current.get(id);
           if (!v) return;
-          if (en.isIntersecting && en.intersectionRatio >= 0.55) {
+          if (en.isIntersecting && en.intersectionRatio >= 0.35) {
             void v.play().catch(() => {});
           } else {
             v.pause();
           }
         });
       },
-      { root: el, threshold: [0, 0.45, 0.55, 0.65, 1] },
+      { root: el, threshold: [0, 0.25, 0.35, 0.5, 0.65, 1] },
     );
 
-    normalized.forEach((s) => {
-      if (s.type !== "VIDEO") return;
-      const node = el.querySelector("[data-slide-key=\"" + s.key + "\"]");
-      if (node) obs.observe(node);
-    });
-
+    el.querySelectorAll("[data-slide-key]").forEach((node) => obs.observe(node));
     return () => obs.disconnect();
-  }, [normalized, reduceMotion]);
+  }, [carouselMulti, reduceMotion, mode, loopSlides, normalized]);
 
-  const goTo = (index: number) => {
+  useEffect(() => {
+    if (!soundEnabled || !carouselMulti) return;
+    const key =
+      activeInstanceKey ||
+      (mode === "infinite" && loopSlides
+        ? loopSlides[1]!.instanceKey
+        : normalized[0]?.key ?? "");
+    if (!key) return;
+    const v = videoRefs.current.get(key);
+    if (!v) return;
+    v.muted = false;
+    void v.play().catch(() => {});
+  }, [soundEnabled, activeInstanceKey, carouselMulti, mode, loopSlides, normalized]);
+
+  const goTo = (logicalIndex: number) => {
     const el = scrollerRef.current;
     if (!el) return;
-    el.scrollTo({ left: index * el.clientWidth, behavior: "smooth" });
+    if (mode === "infinite" && loopSlides) {
+      scrollToSlideIndex(el, logicalIndex + 1, false);
+    } else if (mode === "simple") {
+      scrollToSlideIndex(el, logicalIndex, false);
+    } else {
+      const w = slideStripWidthPx() || el.children[0]?.clientWidth || el.clientWidth;
+      el.scrollTo({ left: logicalIndex * w, behavior: "smooth" });
+    }
   };
 
   const onScrollUser = () => {
     dismissHint();
   };
 
-  if (normalized.length === 0) {
+  if (mode === "empty") {
     return (
       <section
-        className="relative flex min-h-[100dvh] w-full items-end justify-center overflow-hidden"
+        className="relative flex min-h-[min(100dvh,100svh)] w-full items-center justify-center overflow-hidden bg-ff-hero-void px-6"
         aria-label="Firefly hero"
       >
-        <div className="absolute inset-0 bg-ff-hero-void" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_25%,rgba(200,255,140,0.18),transparent_55%),radial-gradient(ellipse_at_80%_80%,rgba(124,245,198,0.12),transparent_45%)]" />
-        <div className="relative z-10 w-full max-w-6xl px-6 pb-32 pt-28 text-center md:pb-36 md:text-left">
-          <FireflyLogo variant="hero" />
-          <p className="mx-auto mt-6 max-w-md text-base text-ff-mist md:mx-0 md:text-lg">
-            Food · Daily DJs · Parties — add hero slides in admin or set env video URL.
-          </p>
-        </div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_25%,rgba(200,255,140,0.12),transparent_55%)]" />
+        <p className="relative z-10 max-w-md text-center text-sm text-ff-mist/90">
+          Add hero slides in admin or set a fallback video URL in settings.
+        </p>
       </section>
     );
   }
 
-  if (reduceMotion || normalized.length === 1) {
-    const s = normalized[0];
+  if (mode === "single") {
+    const s = normalized[0]!;
+    const ik = s.key;
     return (
       <section
-        className="relative flex min-h-[100dvh] w-full items-end justify-center overflow-hidden"
+        className="relative flex min-h-[min(100dvh,100svh)] w-full items-center justify-center overflow-hidden bg-ff-hero-void"
         aria-label="Firefly hero"
       >
-        <HeroBackdrop slide={s} videoRefs={videoRefs} />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#03080f] via-[#03080f]/70 to-transparent" />
-        <div className="relative z-10 w-full max-w-6xl px-6 pb-32 pt-28 text-center md:pb-36 md:text-left">
-          <FireflyLogo variant="hero" />
-          <p className="mx-auto mt-6 max-w-md text-base text-ff-mist md:mx-0 md:text-lg">
-            Food · Daily DJs · Parties — Tollywood nights under the glow.
-          </p>
-          {s.ctaUrl && s.ctaLabel && (
-            <Link
-              href={s.ctaUrl}
-              className="pointer-events-auto mt-8 inline-flex rounded-full bg-ff-glow px-6 py-3 text-sm font-semibold text-ff-void shadow-[0_0_28px_rgba(200,255,120,0.35)] transition hover:brightness-110"
-            >
-              {s.ctaLabel}
-            </Link>
-          )}
-        </div>
+        <HeroBackdrop
+          slide={s}
+          instanceKey={ik}
+          activeInstanceKey={ik}
+          soundEnabled={soundEnabled}
+          videoRefs={videoRefs}
+        />
+        {s.type === "VIDEO" && (
+          <HeroSoundToggle
+            soundEnabled={soundEnabled}
+            setSoundEnabled={setSoundEnabled}
+            videoRefs={videoRefs}
+            activeInstanceKey={ik}
+          />
+        )}
       </section>
     );
   }
+
+  const currentVideoSlide = normalized[activeLogical];
+  const soundTargetInstanceKey =
+    activeInstanceKey ||
+    (mode === "infinite" && loopSlides
+      ? loopSlides[1]!.instanceKey
+      : normalized[0]?.key ?? "");
 
   return (
-    <section className="relative min-h-[100dvh] w-full" aria-label="Firefly hero">
+    <section
+      className="relative min-h-[min(100dvh,100svh)] w-full bg-ff-hero-void"
+      aria-label="Firefly hero"
+    >
       <div
         ref={scrollerRef}
         onScroll={onScrollUser}
-        className="flex h-[100dvh] min-h-[480px] w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex h-[min(100dvh,100svh)] min-h-[480px] w-full touch-pan-x snap-x snap-mandatory overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {normalized.map((s) => (
-          <div
-            key={s.key}
-            className="relative h-full w-screen shrink-0 snap-center snap-always"
-          >
-            <HeroSlideMedia slide={s} videoRefs={videoRefs} />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#03080f] via-[#03080f]/55 to-[#03080f]/25" />
-          </div>
-        ))}
+        {mode === "infinite" && loopSlides
+          ? loopSlides.map((item) => (
+              <HeroSlideColumn
+                key={item.instanceKey}
+                loopItem={item}
+                videoRefs={videoRefs}
+                activeInstanceKey={soundTargetInstanceKey}
+                soundEnabled={soundEnabled}
+              />
+            ))
+          : normalized.map((s) => (
+              <HeroSlideColumn
+                key={s.key}
+                loopItem={{ ...s, instanceKey: s.key }}
+                videoRefs={videoRefs}
+                activeInstanceKey={soundTargetInstanceKey}
+                soundEnabled={soundEnabled}
+              />
+            ))}
+      </div>
+
+      {currentVideoSlide?.type === "VIDEO" && (
+        <HeroSoundToggle
+          soundEnabled={soundEnabled}
+          setSoundEnabled={setSoundEnabled}
+          videoRefs={videoRefs}
+          activeInstanceKey={soundTargetInstanceKey}
+        />
+      )}
+
+      <div
+        className="pointer-events-none absolute inset-y-0 left-0 z-30 w-[min(7vw,2rem)]"
+        aria-hidden
+      >
+        <motion.div
+          className="flex h-full items-center justify-center pl-0.5"
+          animate={reduceMotion ? undefined : { x: [0, -4, 0] }}
+          transition={reduceMotion ? undefined : { repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
+        >
+          <div className="h-14 w-1 rounded-full bg-ff-glow/30 shadow-[0_0_10px_rgba(200,255,120,0.2)]" />
+        </motion.div>
+      </div>
+      <div
+        className="pointer-events-none absolute inset-y-0 right-0 z-30 w-[min(7vw,2rem)]"
+        aria-hidden
+      >
+        <motion.div
+          className="flex h-full items-center justify-center pr-0.5"
+          animate={reduceMotion ? undefined : { x: [0, 4, 0] }}
+          transition={reduceMotion ? undefined : { repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
+        >
+          <div className="h-14 w-1 rounded-full bg-ff-glow/30 shadow-[0_0_10px_rgba(200,255,120,0.2)]" />
+        </motion.div>
       </div>
 
       {hintVisible && (
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="pointer-events-none absolute left-1/2 top-[min(22%,9rem)] z-30 flex -translate-x-1/2 flex-col items-center gap-2"
+          className="pointer-events-none absolute left-1/2 top-[min(14%,6rem)] z-30 flex -translate-x-1/2 flex-col items-center gap-1.5"
         >
-          <div className="flex items-center gap-2 rounded-full border border-ff-glow/35 bg-[#03080f]/75 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-ff-glow shadow-[0_0_24px_rgba(200,255,120,0.2)] backdrop-blur-md">
+          <div className="flex items-center gap-2 rounded-full border border-ff-glow/45 bg-[#03080f]/80 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-ff-glow shadow-[0_0_16px_rgba(200,255,120,0.18)]">
+            <motion.span
+              className="text-ff-mint"
+              animate={{ x: [0, -5, 0] }}
+              transition={{ repeat: Infinity, duration: 1.1 }}
+              aria-hidden
+            >
+              ←
+            </motion.span>
             <span>Swipe</span>
             <motion.span
               className="text-ff-mint"
               animate={{ x: [0, 5, 0] }}
-              transition={{ repeat: Infinity, duration: 1.2 }}
+              transition={{ repeat: Infinity, duration: 1.1 }}
               aria-hidden
             >
               →
@@ -237,114 +687,26 @@ export function HeroCarousel({
         </motion.div>
       )}
 
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-12 bg-gradient-to-r from-[#03080f]/90 to-transparent md:w-16" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-12 bg-gradient-to-l from-[#03080f]/90 to-transparent md:w-16" />
-
-      <div className="pointer-events-none absolute bottom-[min(28%,10rem)] left-0 right-0 z-20 flex justify-center gap-2.5 md:gap-2">
+      <div className="pointer-events-none absolute bottom-[calc(6.25rem+env(safe-area-inset-bottom))] left-0 right-0 z-20 flex justify-center gap-2 drop-shadow-[0_1px_8px_rgba(0,0,0,0.85)]">
         {normalized.map((_, i) => (
           <motion.button
             key={i}
             type="button"
             aria-label={"Go to slide " + (i + 1)}
-            aria-current={i === active}
+            aria-current={i === activeLogical}
             onClick={() => {
               dismissHint();
               goTo(i);
             }}
             className={
-              "pointer-events-auto h-3 w-3 rounded-full border border-ff-glow/40 md:h-2.5 md:w-2.5 " +
-              (i === active ? "bg-ff-glow ff-shadow-glow-sm" : "bg-white/20")
+              "pointer-events-auto h-2.5 w-2.5 rounded-full border border-ff-glow/50 md:h-2 md:w-2 " +
+              (i === activeLogical ? "bg-ff-glow ff-shadow-glow-sm" : "bg-white/35")
             }
             whileTap={reduceMotion ? undefined : { scale: 0.88 }}
             transition={{ type: "spring", stiffness: 500, damping: 28 }}
           />
         ))}
       </div>
-
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center px-6 pb-[max(7rem,env(safe-area-inset-bottom))] pt-24 md:justify-start md:pb-32">
-        <div className="pointer-events-auto w-full max-w-6xl text-center md:text-left">
-          <FireflyLogo variant="hero" />
-          <p className="mx-auto mt-5 max-w-md text-base text-ff-mist md:mx-0 md:text-lg">
-            Food · Daily DJs · Parties — Tollywood nights under the glow.
-          </p>
-          {normalized[active]?.ctaUrl && normalized[active]?.ctaLabel && (
-            <Link
-              href={normalized[active].ctaUrl!}
-              className="mt-8 inline-flex rounded-full bg-ff-glow px-6 py-3 text-sm font-semibold text-ff-void shadow-[0_0_28px_rgba(200,255,120,0.35)] transition hover:brightness-110"
-            >
-              {normalized[active].ctaLabel!}
-            </Link>
-          )}
-        </div>
-      </div>
     </section>
-  );
-}
-
-function HeroBackdrop({
-  slide,
-  videoRefs,
-}: {
-  slide: NormalizedSlide;
-  videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
-}) {
-  if (slide.type === "VIDEO") {
-    return (
-      <video
-        ref={(el) => {
-          videoRefs.current.set(slide.key, el);
-        }}
-        className="absolute inset-0 h-full w-full object-cover"
-        src={slide.mediaUrl}
-        poster={slide.posterUrl ?? undefined}
-        autoPlay
-        muted
-        loop
-        playsInline
-      />
-    );
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={slide.mediaUrl}
-      alt=""
-      className="absolute inset-0 h-full w-full object-cover"
-    />
-  );
-}
-
-function HeroSlideMedia({
-  slide,
-  videoRefs,
-}: {
-  slide: NormalizedSlide;
-  videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
-}) {
-  if (slide.type === "VIDEO") {
-    return (
-      <video
-        ref={(el) => {
-          videoRefs.current.set(slide.key, el);
-        }}
-        data-slide-key={slide.key}
-        className="absolute inset-0 h-full w-full object-cover"
-        src={slide.mediaUrl}
-        poster={slide.posterUrl ?? undefined}
-        muted
-        loop
-        playsInline
-        preload="metadata"
-      />
-    );
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      data-slide-key={slide.key}
-      src={slide.mediaUrl}
-      alt=""
-      className="absolute inset-0 h-full w-full object-cover"
-    />
   );
 }

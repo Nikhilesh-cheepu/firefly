@@ -26,7 +26,7 @@ export default async function Home() {
 
   return (
     <>
-      <main className="flex-1 pb-28 [padding-left:max(0px,env(safe-area-inset-left))] [padding-right:max(0px,env(safe-area-inset-right))]">
+      <main className="flex-1 pb-40 [padding-left:max(0px,env(safe-area-inset-left))] [padding-right:max(0px,env(safe-area-inset-right))] sm:pb-36">
         <HeroCarousel
           slides={heroSlides}
           fallbackVideo={settings.heroVideoUrl}

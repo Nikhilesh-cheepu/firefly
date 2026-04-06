@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { HeroSlideType } from "@prisma/client";
+import { assertAdminSession } from "@/lib/admin-auth";
 import { requirePrisma } from "@/lib/db";
 
 function str(v: FormDataEntryValue | null): string | null {
@@ -11,36 +12,39 @@ function str(v: FormDataEntryValue | null): string | null {
   return s === "" ? null : s;
 }
 
-export async function createHeroSlide(formData: FormData) {
-  const prisma = requirePrisma();
-  const type = (formData.get("type") as string) === "VIDEO" ? "VIDEO" : "IMAGE";
-  const mediaUrl = str(formData.get("mediaUrl"));
-  if (!mediaUrl) {
-    redirect("/admin/hero?error=media");
+export async function addHeroSlideFromUpload(
+  mediaUrl: string,
+  slideType: "IMAGE" | "VIDEO",
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await assertAdminSession();
+  const url = mediaUrl.trim();
+  if (!url) {
+    return { ok: false, error: "Missing media URL." };
+  }
+  if (slideType !== "IMAGE" && slideType !== "VIDEO") {
+    return { ok: false, error: "Invalid slide type." };
   }
 
+  const prisma = requirePrisma();
   const maxOrder = await prisma.heroSlide.aggregate({ _max: { sortOrder: true } });
   const sortOrder = (maxOrder._max.sortOrder ?? -1) + 1;
 
   await prisma.heroSlide.create({
     data: {
-      type: type as HeroSlideType,
-      mediaUrl,
-      posterUrl: str(formData.get("posterUrl")),
-      title: str(formData.get("title")),
-      ctaUrl: str(formData.get("ctaUrl")),
-      ctaLabel: str(formData.get("ctaLabel")),
+      type: slideType as HeroSlideType,
+      mediaUrl: url,
       sortOrder,
-      isActive: formData.get("isActive") === "on",
+      isActive: true,
     },
   });
 
   revalidatePath("/");
   revalidatePath("/admin/hero");
-  redirect("/admin/hero");
+  return { ok: true };
 }
 
 export async function deleteHeroSlide(formData: FormData) {
+  await assertAdminSession();
   const id = str(formData.get("id"));
   if (!id) return;
   const prisma = requirePrisma();
@@ -51,6 +55,7 @@ export async function deleteHeroSlide(formData: FormData) {
 }
 
 export async function moveHeroSlide(formData: FormData) {
+  await assertAdminSession();
   const id = str(formData.get("id"));
   const dir = str(formData.get("direction"));
   if (!id || (dir !== "up" && dir !== "down")) return;
@@ -75,6 +80,7 @@ export async function moveHeroSlide(formData: FormData) {
 }
 
 export async function toggleHeroSlideActive(formData: FormData) {
+  await assertAdminSession();
   const id = str(formData.get("id"));
   if (!id) return;
   const prisma = requirePrisma();

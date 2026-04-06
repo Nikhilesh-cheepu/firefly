@@ -1,6 +1,23 @@
 import { SignJWT, jwtVerify } from "jose";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 export const ADMIN_COOKIE_NAME = "ff_admin";
+
+/** True if the ff_admin cookie carries a valid admin JWT. */
+export async function verifyAdminCookie(): Promise<boolean> {
+  const jar = await cookies();
+  const token = jar.get(ADMIN_COOKIE_NAME)?.value;
+  if (!token) return false;
+  return verifyAdminJwt(token);
+}
+
+/** Use at the start of admin server actions; redirects to login if not authenticated. */
+export async function assertAdminSession(): Promise<void> {
+  if (!(await verifyAdminCookie())) {
+    redirect("/admin/login");
+  }
+}
 
 export function getAdminJwtSecret(): string {
   const s = process.env.ADMIN_SESSION_SECRET?.trim() || process.env.ADMIN_PASSWORD?.trim();
