@@ -67,31 +67,40 @@ function extendedToLogical(extIdx: number, nSlides: number): number {
   return extIdx - 1;
 }
 
-/** Load full video (and eager images) only for the centered slide ±1 so the first paint stays light. */
-function neighborInstanceKeysToLoadMedia(
+/**
+ * Per-slide preload: center + immediate neighbors use `auto` (buffer before swipe ends);
+ * ±2 ring uses `metadata` only. Far slides: no `src` (saves bandwidth vs loading everything).
+ */
+function buildHeroLoadPlan(
   mode: "simple" | "infinite",
   loopSlides: LoopSlide[] | null,
   normalized: NormalizedSlide[],
   activeVideoSyncKey: string,
-): Set<string> {
-  const set = new Set<string>();
-  if (!activeVideoSyncKey) return set;
+): Map<string, "none" | "metadata" | "auto"> {
+  const map = new Map<string, "none" | "metadata" | "auto">();
+  if (!activeVideoSyncKey) return map;
 
   if (mode === "infinite" && loopSlides) {
     const i = loopSlides.findIndex((s) => s.instanceKey === activeVideoSyncKey);
     const idx = i >= 0 ? i : 1;
-    for (let j = Math.max(0, idx - 1); j <= Math.min(loopSlides.length - 1, idx + 1); j++) {
-      set.add(loopSlides[j]!.instanceKey);
+    for (let j = 0; j < loopSlides.length; j++) {
+      const d = Math.abs(j - idx);
+      if (d <= 2) {
+        map.set(loopSlides[j]!.instanceKey, d <= 1 ? "auto" : "metadata");
+      }
     }
-    return set;
+    return map;
   }
 
   const i = normalized.findIndex((s) => s.key === activeVideoSyncKey);
   const idx = i >= 0 ? i : 0;
-  for (let j = Math.max(0, idx - 1); j <= Math.min(normalized.length - 1, idx + 1); j++) {
-    set.add(normalized[j]!.key);
+  for (let j = 0; j < normalized.length; j++) {
+    const d = Math.abs(j - idx);
+    if (d <= 2) {
+      map.set(normalized[j]!.key, d <= 1 ? "auto" : "metadata");
+    }
   }
-  return set;
+  return map;
 }
 
 function IconVolumeOn({ className }: { className?: string }) {
@@ -216,14 +225,10 @@ function HeroAmbientBackdrop({
                 draggable={false}
               />
             ) : (
-              <video
-                className={AMBIENT_MEDIA}
-                src={slide.mediaUrl}
-                muted
-                playsInline
-                autoPlay
-                loop
-                preload="metadata"
+              // No second video fetch — foreground card already loads the file; duplicate was slowing first paint + swipes.
+              <div
+                className="h-full w-full min-h-[120%] min-w-[120%] [transform:translateZ(0)] scale-110 blur-[min(22vw,9rem)] brightness-125 opacity-[0.6] bg-gradient-to-br from-ff-mint/25 via-ff-forest/70 to-ff-void"
+                aria-hidden
               />
             )}
           </div>
@@ -266,7 +271,7 @@ function HeroBackdrop({
             muted={!audible}
             loop
             playsInline
-            preload="metadata"
+            preload="auto"
           />
         </PortraitHeroFrame>
       </HeroMediaCard>
@@ -276,7 +281,12 @@ function HeroBackdrop({
     <HeroMediaCard>
       <PortraitHeroFrame>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={slide.mediaUrl} alt="" className="pointer-events-none h-full w-full object-contain select-none" />
+        <img
+          src={slide.mediaUrl}
+          alt=""
+          fetchPriority="high"
+          className="pointer-events-none h-full w-full object-contain select-none"
+        />
       </PortraitHeroFrame>
     </HeroMediaCard>
   );
@@ -290,6 +300,7 @@ function HeroSlideMedia({
   videoRefs,
   loadMedia,
   videoPreload,
+  imageFetchPriority,
 }: {
   slide: NormalizedSlide;
   instanceKey: string;
@@ -298,6 +309,7 @@ function HeroSlideMedia({
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
   loadMedia: boolean;
   videoPreload: "none" | "metadata" | "auto";
+  imageFetchPriority?: "high" | "low" | "auto";
 }) {
   const audible = soundEnabled && instanceKey === activeInstanceKey;
   if (slide.type === "VIDEO") {
@@ -323,6 +335,7 @@ function HeroSlideMedia({
       src={slide.mediaUrl}
       alt=""
       loading={loadMedia ? "eager" : "lazy"}
+      fetchPriority={imageFetchPriority ?? (loadMedia ? "auto" : "low")}
       className="pointer-events-none h-full w-full object-contain select-none"
     />
   );
@@ -337,6 +350,7 @@ function HeroSlideColumn({
   reduceMotion,
   loadMedia,
   videoPreload,
+  imageFetchPriority,
 }: {
   loopItem: LoopSlide;
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
@@ -346,6 +360,7 @@ function HeroSlideColumn({
   reduceMotion: boolean;
   loadMedia: boolean;
   videoPreload: "none" | "metadata" | "auto";
+  imageFetchPriority?: "high" | "low" | "auto";
 }) {
   return (
     <div className="flex h-full w-[86vw] max-w-[min(86vw,calc(min(90dvh,90svh)*9/16+40px))] shrink-0 snap-center items-center justify-center px-1 [scroll-snap-stop:always]">
@@ -372,6 +387,7 @@ function HeroSlideColumn({
               videoRefs={videoRefs}
               loadMedia={loadMedia}
               videoPreload={videoPreload}
+              imageFetchPriority={imageFetchPriority}
             />
           </PortraitHeroFrame>
         </HeroMediaCard>
@@ -472,10 +488,49 @@ export function HeroCarousel({
     );
   }, [normalized, activeInstanceKey, loopSlides]);
 
-  const loadMediaInstanceKeys = useMemo(() => {
+  const heroLoadPlan = useMemo(() => {
     if (mode !== "simple" && mode !== "infinite") return null;
-    return neighborInstanceKeysToLoadMedia(mode, loopSlides, normalized, activeVideoSyncKey);
+    return buildHeroLoadPlan(mode, loopSlides, normalized, activeVideoSyncKey);
   }, [mode, loopSlides, normalized, activeVideoSyncKey]);
+
+  /** Hint the browser to fetch the first on-screen slides before paint (carousel strip). */
+  useLayoutEffect(() => {
+    if (typeof document === "undefined") return;
+    if (mode !== "simple" && mode !== "infinite") return;
+
+    const links: HTMLLinkElement[] = [];
+    const seen = new Set<string>();
+
+    const pushPreload = (href: string, as: "video" | "image") => {
+      if (!href || seen.has(href)) return;
+      seen.add(href);
+      const link = document.createElement("link");
+      link.rel = "preload";
+      link.as = as;
+      link.href = href;
+      document.head.appendChild(link);
+      links.push(link);
+    };
+
+    if (mode === "infinite" && loopSlides) {
+      for (const j of [1, 2, 3]) {
+        const s = loopSlides[j];
+        if (!s) break;
+        pushPreload(s.mediaUrl, s.type === "VIDEO" ? "video" : "image");
+      }
+    } else {
+      for (let j = 0; j < Math.min(3, normalized.length); j++) {
+        const s = normalized[j]!;
+        pushPreload(s.mediaUrl, s.type === "VIDEO" ? "video" : "image");
+      }
+    }
+
+    return () => {
+      for (const link of links) {
+        link.remove();
+      }
+    };
+  }, [mode, loopSlides, normalized]);
 
   const syncHeroVideos = useCallback(() => {
     videoRefs.current.forEach((v, key) => {
@@ -731,12 +786,10 @@ export function HeroCarousel({
       >
         {mode === "infinite" && loopSlides
           ? loopSlides.map((item) => {
-              const loadMedia = loadMediaInstanceKeys?.has(item.instanceKey) ?? true;
-              const videoPreload: "none" | "metadata" | "auto" = !loadMedia
-                ? "none"
-                : item.instanceKey === activeVideoSyncKey
-                  ? "auto"
-                  : "metadata";
+              const videoPreload = heroLoadPlan?.get(item.instanceKey) ?? "none";
+              const loadMedia = videoPreload !== "none";
+              const imageFetchPriority =
+                item.instanceKey === activeVideoSyncKey ? ("high" as const) : ("low" as const);
               return (
                 <HeroSlideColumn
                   key={item.instanceKey}
@@ -748,16 +801,14 @@ export function HeroCarousel({
                   reduceMotion={!!reduceMotion}
                   loadMedia={loadMedia}
                   videoPreload={videoPreload}
+                  imageFetchPriority={imageFetchPriority}
                 />
               );
             })
           : normalized.map((s) => {
-              const loadMedia = loadMediaInstanceKeys?.has(s.key) ?? true;
-              const videoPreload: "none" | "metadata" | "auto" = !loadMedia
-                ? "none"
-                : s.key === activeVideoSyncKey
-                  ? "auto"
-                  : "metadata";
+              const videoPreload = heroLoadPlan?.get(s.key) ?? "none";
+              const loadMedia = videoPreload !== "none";
+              const imageFetchPriority = s.key === activeVideoSyncKey ? ("high" as const) : ("low" as const);
               return (
                 <HeroSlideColumn
                   key={s.key}
@@ -769,6 +820,7 @@ export function HeroCarousel({
                   reduceMotion={!!reduceMotion}
                   loadMedia={loadMedia}
                   videoPreload={videoPreload}
+                  imageFetchPriority={imageFetchPriority}
                 />
               );
             })}
