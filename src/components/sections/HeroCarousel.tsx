@@ -67,6 +67,33 @@ function extendedToLogical(extIdx: number, nSlides: number): number {
   return extIdx - 1;
 }
 
+/** Load full video (and eager images) only for the centered slide ±1 so the first paint stays light. */
+function neighborInstanceKeysToLoadMedia(
+  mode: "simple" | "infinite",
+  loopSlides: LoopSlide[] | null,
+  normalized: NormalizedSlide[],
+  activeVideoSyncKey: string,
+): Set<string> {
+  const set = new Set<string>();
+  if (!activeVideoSyncKey) return set;
+
+  if (mode === "infinite" && loopSlides) {
+    const i = loopSlides.findIndex((s) => s.instanceKey === activeVideoSyncKey);
+    const idx = i >= 0 ? i : 1;
+    for (let j = Math.max(0, idx - 1); j <= Math.min(loopSlides.length - 1, idx + 1); j++) {
+      set.add(loopSlides[j]!.instanceKey);
+    }
+    return set;
+  }
+
+  const i = normalized.findIndex((s) => s.key === activeVideoSyncKey);
+  const idx = i >= 0 ? i : 0;
+  for (let j = Math.max(0, idx - 1); j <= Math.min(normalized.length - 1, idx + 1); j++) {
+    set.add(normalized[j]!.key);
+  }
+  return set;
+}
+
 function IconVolumeOn({ className }: { className?: string }) {
   return (
     <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -261,12 +288,16 @@ function HeroSlideMedia({
   activeInstanceKey,
   soundEnabled,
   videoRefs,
+  loadMedia,
+  videoPreload,
 }: {
   slide: NormalizedSlide;
   instanceKey: string;
   activeInstanceKey: string;
   soundEnabled: boolean;
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
+  loadMedia: boolean;
+  videoPreload: "none" | "metadata" | "auto";
 }) {
   const audible = soundEnabled && instanceKey === activeInstanceKey;
   if (slide.type === "VIDEO") {
@@ -276,19 +307,24 @@ function HeroSlideMedia({
           videoRefs.current.set(instanceKey, el);
         }}
         className="pointer-events-none h-full w-full object-contain select-none"
-        src={slide.mediaUrl}
+        src={loadMedia ? slide.mediaUrl : undefined}
         poster={slide.posterUrl ?? undefined}
-        autoPlay
+        autoPlay={loadMedia}
         muted={!audible}
         loop
         playsInline
-        preload="metadata"
+        preload={videoPreload}
       />
     );
   }
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={slide.mediaUrl} alt="" className="pointer-events-none h-full w-full object-contain select-none" />
+    <img
+      src={slide.mediaUrl}
+      alt=""
+      loading={loadMedia ? "eager" : "lazy"}
+      className="pointer-events-none h-full w-full object-contain select-none"
+    />
   );
 }
 
@@ -299,6 +335,8 @@ function HeroSlideColumn({
   soundEnabled,
   isActive,
   reduceMotion,
+  loadMedia,
+  videoPreload,
 }: {
   loopItem: LoopSlide;
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
@@ -306,6 +344,8 @@ function HeroSlideColumn({
   soundEnabled: boolean;
   isActive: boolean;
   reduceMotion: boolean;
+  loadMedia: boolean;
+  videoPreload: "none" | "metadata" | "auto";
 }) {
   return (
     <div className="flex h-full w-[86vw] max-w-[min(86vw,calc(min(90dvh,90svh)*9/16+40px))] shrink-0 snap-center items-center justify-center px-1 [scroll-snap-stop:always]">
@@ -330,6 +370,8 @@ function HeroSlideColumn({
               activeInstanceKey={activeInstanceKey}
               soundEnabled={soundEnabled}
               videoRefs={videoRefs}
+              loadMedia={loadMedia}
+              videoPreload={videoPreload}
             />
           </PortraitHeroFrame>
         </HeroMediaCard>
@@ -430,10 +472,16 @@ export function HeroCarousel({
     );
   }, [normalized, activeInstanceKey, loopSlides]);
 
+  const loadMediaInstanceKeys = useMemo(() => {
+    if (mode !== "simple" && mode !== "infinite") return null;
+    return neighborInstanceKeysToLoadMedia(mode, loopSlides, normalized, activeVideoSyncKey);
+  }, [mode, loopSlides, normalized, activeVideoSyncKey]);
+
   const syncHeroVideos = useCallback(() => {
     videoRefs.current.forEach((v, key) => {
       if (!v || v.tagName !== "VIDEO") return;
       if (key === activeVideoSyncKey) {
+        if (!v.src) return;
         const play = () => void v.play().catch(() => {});
         if (v.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) play();
         else v.addEventListener("canplay", play, { once: true });
@@ -679,31 +727,51 @@ export function HeroCarousel({
       <div
         ref={scrollerRef}
         onScroll={onScrollUser}
-        className="relative z-10 flex h-[min(90dvh,90svh)] min-h-[420px] w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain [touch-action:pan-x_pan-y] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative z-10 flex h-[min(90dvh,90svh)] min-h-[420px] w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain [touch-action:pan-x_pan-y] [overflow-anchor:none] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {mode === "infinite" && loopSlides
-          ? loopSlides.map((item) => (
-              <HeroSlideColumn
-                key={item.instanceKey}
-                loopItem={item}
-                videoRefs={videoRefs}
-                activeInstanceKey={soundTargetInstanceKey}
-                soundEnabled={soundEnabled}
-                isActive={item.key === activeSlideKey}
-                reduceMotion={!!reduceMotion}
-              />
-            ))
-          : normalized.map((s) => (
-              <HeroSlideColumn
-                key={s.key}
-                loopItem={{ ...s, instanceKey: s.key }}
-                videoRefs={videoRefs}
-                activeInstanceKey={soundTargetInstanceKey}
-                soundEnabled={soundEnabled}
-                isActive={s.key === activeSlideKey}
-                reduceMotion={!!reduceMotion}
-              />
-            ))}
+          ? loopSlides.map((item) => {
+              const loadMedia = loadMediaInstanceKeys?.has(item.instanceKey) ?? true;
+              const videoPreload: "none" | "metadata" | "auto" = !loadMedia
+                ? "none"
+                : item.instanceKey === activeVideoSyncKey
+                  ? "auto"
+                  : "metadata";
+              return (
+                <HeroSlideColumn
+                  key={item.instanceKey}
+                  loopItem={item}
+                  videoRefs={videoRefs}
+                  activeInstanceKey={soundTargetInstanceKey}
+                  soundEnabled={soundEnabled}
+                  isActive={item.key === activeSlideKey}
+                  reduceMotion={!!reduceMotion}
+                  loadMedia={loadMedia}
+                  videoPreload={videoPreload}
+                />
+              );
+            })
+          : normalized.map((s) => {
+              const loadMedia = loadMediaInstanceKeys?.has(s.key) ?? true;
+              const videoPreload: "none" | "metadata" | "auto" = !loadMedia
+                ? "none"
+                : s.key === activeVideoSyncKey
+                  ? "auto"
+                  : "metadata";
+              return (
+                <HeroSlideColumn
+                  key={s.key}
+                  loopItem={{ ...s, instanceKey: s.key }}
+                  videoRefs={videoRefs}
+                  activeInstanceKey={soundTargetInstanceKey}
+                  soundEnabled={soundEnabled}
+                  isActive={s.key === activeSlideKey}
+                  reduceMotion={!!reduceMotion}
+                  loadMedia={loadMedia}
+                  videoPreload={videoPreload}
+                />
+              );
+            })}
       </div>
 
       {currentVideoSlide?.type === "VIDEO" && (

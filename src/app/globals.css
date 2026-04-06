@@ -45,6 +45,7 @@
 /* Smooth scroll on `html` plus hero media loading triggered bad scroll anchoring (page jumped toward bottom). */
 html {
   scroll-behavior: auto;
+  overflow-anchor: none;
 }
 
 * {
