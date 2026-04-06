@@ -4,19 +4,12 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { telHrefFromInput, waMeHrefFromInput } from "@/lib/indian-phone";
 import type { SiteSettingsDTO } from "@/lib/site-data";
 
 type Props = {
   settings: SiteSettingsDTO;
 };
-
-function waHref(n: string | null) {
-  if (!n) return null;
-  if (n.startsWith("http")) return n;
-  const digits = n.replace(/\D/g, "");
-  if (!digits) return null;
-  return `https://wa.me/${digits}`;
-}
 
 const spring = { type: "spring" as const, stiffness: 400, damping: 26 };
 
@@ -64,6 +57,17 @@ function IconMap({ className }: { className?: string }) {
   );
 }
 
+function IconMail({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
 type SheetAction = {
   key: string;
   href: string;
@@ -73,21 +77,16 @@ type SheetAction = {
 };
 
 function buildSheetActions(settings: SiteSettingsDTO): SheetAction[] {
-  const wa = waHref(settings.whatsapp);
-  const tel = settings.phone
-    ? settings.phone.startsWith("tel:")
-      ? settings.phone
-      : `tel:${settings.phone.replace(/\s/g, "")}`
-    : null;
+  const tel = telHrefFromInput(settings.phone);
+  const wa = waMeHrefFromInput(settings.whatsapp);
 
   const rows: SheetAction[] = [];
-  if (settings.instagram) {
+  if (tel) {
     rows.push({
-      key: "ig",
-      href: settings.instagram,
-      label: "Instagram",
-      external: true,
-      icon: <IconInstagram className="text-ff-glow" />,
+      key: "phone",
+      href: tel,
+      label: "Call",
+      icon: <IconPhone className="text-ff-glow" />,
     });
   }
   if (wa) {
@@ -99,12 +98,13 @@ function buildSheetActions(settings: SiteSettingsDTO): SheetAction[] {
       icon: <IconWhatsApp className="text-ff-glow" />,
     });
   }
-  if (tel) {
+  if (settings.instagram) {
     rows.push({
-      key: "phone",
-      href: tel,
-      label: "Call",
-      icon: <IconPhone className="text-ff-glow" />,
+      key: "ig",
+      href: settings.instagram,
+      label: "Instagram",
+      external: true,
+      icon: <IconInstagram className="text-ff-glow" />,
     });
   }
   if (settings.mapsUrl) {
@@ -116,6 +116,17 @@ function buildSheetActions(settings: SiteSettingsDTO): SheetAction[] {
       icon: <IconMap className="text-ff-glow" />,
     });
   }
+  if (settings.contactEmail) {
+    const em = settings.contactEmail.trim();
+    if (em) {
+      rows.push({
+        key: "email",
+        href: `mailto:${em}`,
+        label: "Email",
+        icon: <IconMail className="text-ff-glow" />,
+      });
+    }
+  }
   return rows;
 }
 
@@ -124,7 +135,6 @@ export function StickyBar({ settings }: Props) {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const sheetActions = useMemo(() => buildSheetActions(settings), [settings]);
-  const hasContact = sheetActions.length > 0;
 
   const closeSheet = useCallback(() => setSheetOpen(false), []);
 
@@ -173,20 +183,18 @@ export function StickyBar({ settings }: Props) {
                 Book table
               </Link>
             </motion.div>
-            {hasContact && (
-              <motion.button
-                type="button"
-                onClick={() => setSheetOpen(true)}
-                className="inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-xl border border-ff-mint/28 bg-ff-deep/90 px-4 text-sm font-semibold text-ff-glow ff-shadow-soft transition-colors hover:border-ff-glow/35 hover:bg-ff-forest/90"
-                whileHover={hover}
-                whileTap={tap}
-                transition={spring}
-                aria-haspopup="dialog"
-                aria-expanded={sheetOpen}
-              >
-                Contact
-              </motion.button>
-            )}
+            <motion.button
+              type="button"
+              onClick={() => setSheetOpen(true)}
+              className="inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-xl border border-ff-mint/28 bg-ff-deep/90 px-3 text-[13px] font-semibold leading-tight text-ff-glow ff-shadow-soft transition-colors hover:border-ff-glow/35 hover:bg-ff-forest/90 sm:px-4 sm:text-sm"
+              whileHover={hover}
+              whileTap={tap}
+              transition={spring}
+              aria-haspopup="dialog"
+              aria-expanded={sheetOpen}
+            >
+              Contact us
+            </motion.button>
           </div>
         </motion.nav>
       </div>
@@ -203,7 +211,7 @@ export function StickyBar({ settings }: Props) {
             <button
               type="button"
               className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
-              aria-label="Close contact menu"
+              aria-label="Close Contact us"
               onClick={closeSheet}
             />
             <motion.div
@@ -219,7 +227,7 @@ export function StickyBar({ settings }: Props) {
               <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-ff-mist/25" aria-hidden />
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h2 id="contact-sheet-title" className="text-lg font-semibold text-white">
-                  Contact
+                  Contact us
                 </h2>
                 <button
                   type="button"
@@ -229,25 +237,32 @@ export function StickyBar({ settings }: Props) {
                   Close
                 </button>
               </div>
-              <ul className="flex flex-col gap-2 pb-1">
-                {sheetActions.map((a) => (
-                  <li key={a.key}>
-                    <motion.a
-                      href={a.href}
-                      {...(a.external
-                        ? { target: "_blank" as const, rel: "noopener noreferrer" }
-                        : {})}
-                      className="flex min-h-[52px] items-center gap-3 rounded-xl border border-ff-glow/15 bg-ff-deep/80 px-4 py-3 text-left text-base font-medium text-ff-mist transition hover:border-ff-glow/30 hover:bg-ff-forest/50 hover:text-white"
-                      whileTap={reduce ? undefined : { scale: 0.99 }}
-                    >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-ff-void/80">
-                        {a.icon}
-                      </span>
-                      {a.label}
-                    </motion.a>
-                  </li>
-                ))}
-              </ul>
+              {sheetActions.length === 0 ? (
+                <p className="pb-4 text-center text-sm leading-relaxed text-ff-mist/85">
+                  For reservations, use <span className="text-ff-mint">Book table</span>. Other ways to reach us
+                  will be added here soon.
+                </p>
+              ) : (
+                <ul className="flex flex-col gap-2 pb-1">
+                  {sheetActions.map((a) => (
+                    <li key={a.key}>
+                      <motion.a
+                        href={a.href}
+                        {...(a.external
+                          ? { target: "_blank" as const, rel: "noopener noreferrer" }
+                          : {})}
+                        className="flex min-h-[52px] items-center gap-3 rounded-xl border border-ff-glow/15 bg-ff-deep/80 px-4 py-3 text-left text-base font-medium text-ff-mist transition hover:border-ff-glow/30 hover:bg-ff-forest/50 hover:text-white"
+                        whileTap={reduce ? undefined : { scale: 0.99 }}
+                      >
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-ff-void/80">
+                          {a.icon}
+                        </span>
+                        {a.label}
+                      </motion.a>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </motion.div>
           </motion.div>
         )}
