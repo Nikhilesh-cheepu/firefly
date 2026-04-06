@@ -8,16 +8,22 @@ const display = Bebas_Neue({
   weight: "400",
   subsets: ["latin"],
   variable: "--font-display",
+  display: "swap",
+  adjustFontFallback: true,
 });
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-dm",
+  display: "swap",
+  adjustFontFallback: true,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
+  adjustFontFallback: true,
 });
 
 export const metadata: Metadata = {

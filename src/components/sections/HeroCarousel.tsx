@@ -563,8 +563,9 @@ export function HeroCarousel({
   useEffect(() => {
     if (typeof window === "undefined" || !carouselMulti) return;
     if (window.sessionStorage.getItem(HINT_KEY) === "1") return;
-    const show = window.setTimeout(() => setHintVisible(true), 400);
-    const hide = window.setTimeout(() => setHintVisible(false), 7000);
+    /* After hero media can win LCP; Framer blur-on-letters was flagged as ~3.5s render delay in PSI. */
+    const show = window.setTimeout(() => setHintVisible(true), 2800);
+    const hide = window.setTimeout(() => setHintVisible(false), 11_000);
     return () => {
       window.clearTimeout(show);
       window.clearTimeout(hide);
@@ -839,113 +840,43 @@ export function HeroCarousel({
         className="pointer-events-none absolute inset-y-0 left-0 z-30 w-[min(7vw,2rem)]"
         aria-hidden
       >
-        <motion.div
-          className="flex h-full items-center justify-center pl-0.5"
-          animate={reduceMotion ? undefined : { x: [0, -6, 0] }}
-          transition={
-            reduceMotion
-              ? undefined
-              : { repeat: Infinity, duration: 2.1, ease: [0.45, 0, 0.55, 1] }
-          }
+        <div
+          className={`flex h-full items-center justify-center pl-0.5 will-change-transform ${reduceMotion ? "" : "ff-hero-chevron-left"}`}
         >
           <div className="h-16 w-1 rounded-full bg-gradient-to-b from-ff-glow/15 via-ff-glow/45 to-ff-glow/15 shadow-[0_0_14px_rgba(200,255,120,0.28)]" />
-        </motion.div>
+        </div>
       </div>
       <div
         className="pointer-events-none absolute inset-y-0 right-0 z-30 w-[min(7vw,2rem)]"
         aria-hidden
       >
-        <motion.div
-          className="flex h-full items-center justify-center pr-0.5"
-          animate={reduceMotion ? undefined : { x: [0, 6, 0] }}
-          transition={
-            reduceMotion
-              ? undefined
-              : { repeat: Infinity, duration: 2.1, ease: [0.45, 0, 0.55, 1] }
-          }
+        <div
+          className={`flex h-full items-center justify-center pr-0.5 will-change-transform ${reduceMotion ? "" : "ff-hero-chevron-right"}`}
         >
           <div className="h-16 w-1 rounded-full bg-gradient-to-b from-ff-glow/15 via-ff-glow/45 to-ff-glow/15 shadow-[0_0_14px_rgba(200,255,120,0.28)]" />
-        </motion.div>
+        </div>
       </div>
 
       {hintVisible && (
-        <motion.div
-          initial={{ opacity: 0, y: 8, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ type: "spring", stiffness: 320, damping: 24 }}
-          className="pointer-events-none absolute left-1/2 top-[min(12%,5.25rem)] z-30 flex -translate-x-1/2 flex-col items-center gap-1.5"
-        >
-          <motion.div
-            className="flex items-center gap-1.5 rounded-full border border-ff-glow/45 bg-[#03080f]/82 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-ff-glow shadow-[0_0_20px_rgba(200,255,120,0.2)] backdrop-blur-sm"
-            initial="hidden"
-            animate="visible"
-            variants={{
-              hidden: {},
-              visible: {
-                transition: { staggerChildren: 0.048, delayChildren: 0.06 },
-              },
-            }}
+        <div className="pointer-events-none absolute left-1/2 top-[min(12%,5.25rem)] z-30 flex -translate-x-1/2 flex-col items-center gap-1.5">
+          <div
+            role="status"
+            className="ff-hero-hint-pop flex items-center gap-1.5 rounded-full border border-ff-glow/45 bg-[#03080f]/95 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-ff-glow shadow-[0_0_20px_rgba(200,255,120,0.2)]"
           >
-            <motion.span
-              className="text-ff-mint"
-              variants={{
-                hidden: { opacity: 0, x: 8 },
-                visible: {
-                  opacity: 1,
-                  x: 0,
-                  transition: { type: "spring", stiffness: 420, damping: 20 },
-                },
-              }}
-              animate={reduceMotion ? undefined : { x: [0, -5, 0] }}
-              transition={
-                reduceMotion ? undefined : { repeat: Infinity, duration: 1.4, ease: "easeInOut" }
-              }
-              aria-hidden
-            >
+            <span className="text-ff-mint" aria-hidden>
               ←
-            </motion.span>
-            {"Swipe".split("").map((ch, i) => (
-              <motion.span
-                key={i}
-                className="inline-block"
-                variants={{
-                  hidden: { opacity: 0, y: 8, filter: "blur(6px)" },
-                  visible: {
-                    opacity: 1,
-                    y: 0,
-                    filter: "blur(0px)",
-                    transition: { type: "spring", stiffness: 400, damping: 22 },
-                  },
-                }}
-              >
-                {ch}
-              </motion.span>
-            ))}
-            <motion.span
-              className="text-ff-mint"
-              variants={{
-                hidden: { opacity: 0, x: -8 },
-                visible: {
-                  opacity: 1,
-                  x: 0,
-                  transition: { type: "spring", stiffness: 420, damping: 20 },
-                },
-              }}
-              animate={reduceMotion ? undefined : { x: [0, 5, 0] }}
-              transition={
-                reduceMotion ? undefined : { repeat: Infinity, duration: 1.4, ease: "easeInOut" }
-              }
-              aria-hidden
-            >
+            </span>
+            <span>Swipe</span>
+            <span className="text-ff-mint" aria-hidden>
               →
-            </motion.span>
-          </motion.div>
-        </motion.div>
+            </span>
+          </div>
+        </div>
       )}
 
       <div className="pointer-events-none absolute bottom-[calc(6.25rem+env(safe-area-inset-bottom))] left-0 right-0 z-20 flex justify-center gap-2 drop-shadow-[0_1px_8px_rgba(0,0,0,0.85)]">
         {normalized.map((_, i) => (
-          <motion.button
+          <button
             key={i}
             type="button"
             aria-label={"Go to slide " + (i + 1)}
@@ -955,11 +886,9 @@ export function HeroCarousel({
               goTo(i);
             }}
             className={
-              "pointer-events-auto h-2.5 w-2.5 rounded-full border border-ff-glow/50 md:h-2 md:w-2 " +
+              "pointer-events-auto h-2.5 w-2.5 rounded-full border border-ff-glow/50 transition-transform active:scale-[0.88] md:h-2 md:w-2 " +
               (i === activeLogical ? "bg-ff-glow ff-shadow-glow-sm" : "bg-white/35")
             }
-            whileTap={reduceMotion ? undefined : { scale: 0.88 }}
-            transition={{ type: "spring", stiffness: 520, damping: 26 }}
           />
         ))}
       </div>

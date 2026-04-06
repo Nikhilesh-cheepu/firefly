@@ -48,6 +48,63 @@ html {
   overflow-anchor: none;
 }
 
+/* Hero: CSS-only motion avoids Framer blur/filter on text (PageSpeed LCP + compositing). */
+@keyframes ff-hero-hint-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ff-hero-chevron-left {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-6px);
+  }
+}
+
+@keyframes ff-hero-chevron-right {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(6px);
+  }
+}
+
+.ff-hero-hint-pop {
+  animation: ff-hero-hint-in 0.45s ease-out both;
+}
+
+.ff-hero-chevron-left {
+  animation: ff-hero-chevron-left 2.1s ease-in-out infinite;
+}
+
+.ff-hero-chevron-right {
+  animation: ff-hero-chevron-right 2.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ff-hero-hint-pop,
+  .ff-hero-chevron-left,
+  .ff-hero-chevron-right {
+    animation: none;
+  }
+
+  .ff-hero-hint-pop {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 * {
   -webkit-tap-highlight-color: transparent;
 }
