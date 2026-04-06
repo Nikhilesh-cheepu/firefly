@@ -216,14 +216,12 @@ function HeroBackdrop({
   activeInstanceKey,
   soundEnabled,
   videoRefs,
-  onVideoReady,
 }: {
   slide: NormalizedSlide;
   instanceKey: string;
   activeInstanceKey: string;
   soundEnabled: boolean;
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
-  onVideoReady?: () => void;
 }) {
   const audible = soundEnabled && instanceKey === activeInstanceKey;
   if (slide.type === "VIDEO") {
@@ -233,7 +231,6 @@ function HeroBackdrop({
           <video
             ref={(el) => {
               videoRefs.current.set(instanceKey, el);
-              if (el) onVideoReady?.();
             }}
             className="pointer-events-none h-full w-full object-contain select-none"
             src={slide.mediaUrl}
@@ -242,7 +239,7 @@ function HeroBackdrop({
             muted={!audible}
             loop
             playsInline
-            preload="auto"
+            preload="metadata"
           />
         </PortraitHeroFrame>
       </HeroMediaCard>
@@ -264,14 +261,12 @@ function HeroSlideMedia({
   activeInstanceKey,
   soundEnabled,
   videoRefs,
-  onVideoReady,
 }: {
   slide: NormalizedSlide;
   instanceKey: string;
   activeInstanceKey: string;
   soundEnabled: boolean;
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
-  onVideoReady?: () => void;
 }) {
   const audible = soundEnabled && instanceKey === activeInstanceKey;
   if (slide.type === "VIDEO") {
@@ -279,15 +274,15 @@ function HeroSlideMedia({
       <video
         ref={(el) => {
           videoRefs.current.set(instanceKey, el);
-          if (el) onVideoReady?.();
         }}
         className="pointer-events-none h-full w-full object-contain select-none"
         src={slide.mediaUrl}
         poster={slide.posterUrl ?? undefined}
+        autoPlay
         muted={!audible}
         loop
         playsInline
-        preload="auto"
+        preload="metadata"
       />
     );
   }
@@ -304,7 +299,6 @@ function HeroSlideColumn({
   soundEnabled,
   isActive,
   reduceMotion,
-  onVideoReady,
 }: {
   loopItem: LoopSlide;
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
@@ -312,7 +306,6 @@ function HeroSlideColumn({
   soundEnabled: boolean;
   isActive: boolean;
   reduceMotion: boolean;
-  onVideoReady?: () => void;
 }) {
   return (
     <div className="flex h-full w-[86vw] max-w-[min(86vw,calc(min(90dvh,90svh)*9/16+40px))] shrink-0 snap-center items-center justify-center px-1 [scroll-snap-stop:always]">
@@ -337,7 +330,6 @@ function HeroSlideColumn({
               activeInstanceKey={activeInstanceKey}
               soundEnabled={soundEnabled}
               videoRefs={videoRefs}
-              onVideoReady={onVideoReady}
             />
           </PortraitHeroFrame>
         </HeroMediaCard>
@@ -455,10 +447,6 @@ export function HeroCarousel({
       }
     });
   }, [activeVideoSyncKey]);
-
-  const bumpVideoSync = useCallback(() => {
-    queueMicrotask(() => syncHeroVideos());
-  }, [syncHeroVideos]);
 
   useEffect(() => {
     if (normalized.length === 0) return;
@@ -658,7 +646,6 @@ export function HeroCarousel({
             activeInstanceKey={ik}
             soundEnabled={soundEnabled}
             videoRefs={videoRefs}
-            onVideoReady={bumpVideoSync}
           />
         </div>
         {s.type === "VIDEO" && (
@@ -704,7 +691,6 @@ export function HeroCarousel({
                 soundEnabled={soundEnabled}
                 isActive={item.key === activeSlideKey}
                 reduceMotion={!!reduceMotion}
-                onVideoReady={bumpVideoSync}
               />
             ))
           : normalized.map((s) => (
@@ -716,7 +702,6 @@ export function HeroCarousel({
                 soundEnabled={soundEnabled}
                 isActive={s.key === activeSlideKey}
                 reduceMotion={!!reduceMotion}
-                onVideoReady={bumpVideoSync}
               />
             ))}
       </div>

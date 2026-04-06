@@ -42,14 +42,9 @@
   --color-ff-violet: #6b5cff;
 }
 
+/* Smooth scroll on `html` plus hero media loading triggered bad scroll anchoring (page jumped toward bottom). */
 html {
-  scroll-behavior: smooth;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+  scroll-behavior: auto;
 }
 
 * {
