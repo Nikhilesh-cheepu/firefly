@@ -13,10 +13,10 @@ export function MenuSection({ categories }: Props) {
   return (
     <SectionReveal
       id="menu"
-      className="scroll-mt-6 bg-gradient-to-b from-ff-forest/40 via-ff-deep to-ff-void px-4 py-20 sm:px-6 md:py-28"
+      className="scroll-mt-6 bg-gradient-to-b from-ff-forest/40 via-ff-deep to-ff-void px-4 py-12 sm:px-6 md:py-16"
     >
       <div className="mx-auto max-w-6xl">
-        <header className="mb-12 md:mb-16">
+        <header className="mb-8 md:mb-10">
           <FadeInChild>
             <p className="text-xs font-medium uppercase tracking-[0.3em] text-ff-mint/90">
               Eat &amp; drink

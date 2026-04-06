@@ -1,7 +1,7 @@
 "use client";
 
 import type { HeroSlide, HeroSlideType } from "@prisma/client";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { MutableRefObject, ReactNode } from "react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
@@ -128,13 +128,13 @@ function HeroSoundToggle({
 }
 
 function mobileHeroMaxHeightClass() {
-  return "max-h-[min(100dvh,100svh)]";
+  return "max-h-[min(90dvh,90svh)]";
 }
 
 function PortraitHeroFrame({ children }: { children: ReactNode }) {
   return (
     <div
-      className={`relative mx-auto aspect-[9/16] w-[min(92vw,calc(min(100dvh,100svh)*9/16))] ${mobileHeroMaxHeightClass()} max-w-full`}
+      className={`relative mx-auto aspect-[9/16] w-[min(92vw,calc(min(90dvh,90svh)*9/16))] ${mobileHeroMaxHeightClass()} max-w-full`}
     >
       {children}
     </div>
@@ -145,6 +145,67 @@ function HeroMediaCard({ children }: { children: ReactNode }) {
   return (
     <div className="overflow-hidden rounded-2xl border-2 border-ff-glow/50 bg-black/20 shadow-[0_0_0_1px_rgba(124,245,198,0.12),0_12px_40px_rgba(0,0,0,0.55)] ring-1 ring-ff-mint/15">
       {children}
+    </div>
+  );
+}
+
+/** Media wash: strong blur + lift so dark posters/videos still tint the room. */
+const AMBIENT_MEDIA =
+  "h-full w-full min-h-[120%] min-w-[120%] object-cover [transform:translateZ(0)] scale-110 blur-[min(22vw,9rem)] brightness-[1.38] saturate-[1.58] contrast-[1.1] opacity-[0.68]";
+
+/** Blurred, full-bleed wash from the active slide (Amazon / Apple Music–style ambient). */
+function HeroAmbientBackdrop({
+  slide,
+  reduceMotion,
+}: {
+  slide: NormalizedSlide;
+  reduceMotion: boolean;
+}) {
+  const usePosterStill =
+    slide.type === "VIDEO" && slide.posterUrl != null && slide.posterUrl !== "";
+
+  const transition = reduceMotion
+    ? { duration: 0 }
+    : { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const };
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={slide.key}
+          className="absolute inset-0"
+          initial={reduceMotion ? { opacity: 1 } : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={reduceMotion ? { opacity: 1 } : { opacity: 0 }}
+          transition={transition}
+        >
+          <div className="absolute inset-[-32%] flex items-center justify-center">
+            {slide.type === "IMAGE" || usePosterStill ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={usePosterStill ? slide.posterUrl! : slide.mediaUrl}
+                alt=""
+                className={AMBIENT_MEDIA}
+                draggable={false}
+              />
+            ) : (
+              <video
+                className={AMBIENT_MEDIA}
+                src={slide.mediaUrl}
+                muted
+                playsInline
+                autoPlay
+                loop
+                preload="metadata"
+              />
+            )}
+          </div>
+        </motion.div>
+      </AnimatePresence>
+      {/* Brand-tinted lift on very dark frames */}
+      <div className="absolute inset-0 bg-gradient-to-br from-ff-glow/[0.09] via-ff-mint/[0.05] to-ff-glow/[0.07] mix-blend-soft-light" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#03080f]/36 via-[#03080f]/16 to-[#03080f]/40" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_42%,transparent_0%,rgba(3,8,15,0.22)_65%,rgba(3,8,15,0.48)_100%)]" />
     </div>
   );
 }
@@ -171,7 +232,7 @@ function HeroBackdrop({
             ref={(el) => {
               videoRefs.current.set(instanceKey, el);
             }}
-            className="h-full w-full object-contain"
+            className="pointer-events-none h-full w-full object-contain select-none"
             src={slide.mediaUrl}
             poster={slide.posterUrl ?? undefined}
             autoPlay
@@ -187,7 +248,7 @@ function HeroBackdrop({
     <HeroMediaCard>
       <PortraitHeroFrame>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={slide.mediaUrl} alt="" className="h-full w-full object-contain" />
+        <img src={slide.mediaUrl} alt="" className="pointer-events-none h-full w-full object-contain select-none" />
       </PortraitHeroFrame>
     </HeroMediaCard>
   );
@@ -213,7 +274,7 @@ function HeroSlideMedia({
         ref={(el) => {
           videoRefs.current.set(instanceKey, el);
         }}
-        className="h-full w-full object-contain"
+        className="pointer-events-none h-full w-full object-contain select-none"
         src={slide.mediaUrl}
         poster={slide.posterUrl ?? undefined}
         muted={!audible}
@@ -225,7 +286,7 @@ function HeroSlideMedia({
   }
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={slide.mediaUrl} alt="" className="h-full w-full object-contain" />
+    <img src={slide.mediaUrl} alt="" className="pointer-events-none h-full w-full object-contain select-none" />
   );
 }
 
@@ -234,17 +295,30 @@ function HeroSlideColumn({
   videoRefs,
   activeInstanceKey,
   soundEnabled,
+  isActive,
+  reduceMotion,
 }: {
   loopItem: LoopSlide;
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
   activeInstanceKey: string;
   soundEnabled: boolean;
+  isActive: boolean;
+  reduceMotion: boolean;
 }) {
   return (
-    <div className="flex h-full w-[86vw] max-w-[min(86vw,calc(min(100dvh,100svh)*9/16+48px))] shrink-0 snap-center items-center justify-center px-1">
-      <div
+    <div className="flex h-full w-[86vw] max-w-[min(86vw,calc(min(90dvh,90svh)*9/16+40px))] shrink-0 snap-center items-center justify-center px-1 [scroll-snap-stop:always]">
+      <motion.div
+        className="flex w-full items-center justify-center will-change-transform"
         data-slide-key={loopItem.instanceKey}
-        className="flex w-full items-center justify-center"
+        animate={
+          reduceMotion
+            ? undefined
+            : {
+                scale: isActive ? 1 : 0.966,
+                opacity: isActive ? 1 : 0.88,
+              }
+        }
+        transition={{ type: "spring", stiffness: 420, damping: 30, mass: 0.72 }}
       >
         <HeroMediaCard>
           <PortraitHeroFrame>
@@ -257,7 +331,7 @@ function HeroSlideColumn({
             />
           </PortraitHeroFrame>
         </HeroMediaCard>
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -549,7 +623,7 @@ export function HeroCarousel({
   if (mode === "empty") {
     return (
       <section
-        className="relative flex min-h-[min(100dvh,100svh)] w-full items-center justify-center overflow-hidden bg-ff-hero-void px-6"
+        className="relative flex min-h-[min(90dvh,90svh)] w-full items-center justify-center overflow-hidden bg-ff-hero-void px-6"
         aria-label="Firefly hero"
       >
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_25%,rgba(200,255,140,0.12),transparent_55%)]" />
@@ -565,16 +639,19 @@ export function HeroCarousel({
     const ik = s.key;
     return (
       <section
-        className="relative flex min-h-[min(100dvh,100svh)] w-full items-center justify-center overflow-hidden bg-ff-hero-void"
+        className="relative flex min-h-[min(90dvh,90svh)] w-full items-center justify-center overflow-hidden bg-ff-hero-void"
         aria-label="Firefly hero"
       >
-        <HeroBackdrop
-          slide={s}
-          instanceKey={ik}
-          activeInstanceKey={ik}
-          soundEnabled={soundEnabled}
-          videoRefs={videoRefs}
-        />
+        <HeroAmbientBackdrop slide={s} reduceMotion={!!reduceMotion} />
+        <div className="relative z-10 flex w-full items-center justify-center">
+          <HeroBackdrop
+            slide={s}
+            instanceKey={ik}
+            activeInstanceKey={ik}
+            soundEnabled={soundEnabled}
+            videoRefs={videoRefs}
+          />
+        </div>
         {s.type === "VIDEO" && (
           <HeroSoundToggle
             soundEnabled={soundEnabled}
@@ -594,15 +671,19 @@ export function HeroCarousel({
       ? loopSlides[1]!.instanceKey
       : normalized[0]?.key ?? "");
 
+  const ambientSlide = normalized[activeLogical] ?? normalized[0]!;
+  const activeSlideKey = normalized[activeLogical]?.key ?? normalized[0]!.key;
+
   return (
     <section
-      className="relative min-h-[min(100dvh,100svh)] w-full bg-ff-hero-void"
+      className="relative min-h-[min(90dvh,90svh)] w-full overflow-hidden bg-ff-hero-void"
       aria-label="Firefly hero"
     >
+      <HeroAmbientBackdrop slide={ambientSlide} reduceMotion={!!reduceMotion} />
       <div
         ref={scrollerRef}
         onScroll={onScrollUser}
-        className="flex h-[min(100dvh,100svh)] min-h-[480px] w-full touch-pan-x snap-x snap-mandatory overflow-x-auto overflow-y-hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative z-10 flex h-[min(90dvh,90svh)] min-h-[420px] w-full snap-x snap-mandatory overflow-x-auto overflow-y-hidden overscroll-x-contain [touch-action:pan-x_pan-y] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {mode === "infinite" && loopSlides
           ? loopSlides.map((item) => (
@@ -612,6 +693,8 @@ export function HeroCarousel({
                 videoRefs={videoRefs}
                 activeInstanceKey={soundTargetInstanceKey}
                 soundEnabled={soundEnabled}
+                isActive={item.key === activeSlideKey}
+                reduceMotion={!!reduceMotion}
               />
             ))
           : normalized.map((s) => (
@@ -621,6 +704,8 @@ export function HeroCarousel({
                 videoRefs={videoRefs}
                 activeInstanceKey={soundTargetInstanceKey}
                 soundEnabled={soundEnabled}
+                isActive={s.key === activeSlideKey}
+                reduceMotion={!!reduceMotion}
               />
             ))}
       </div>
@@ -640,10 +725,14 @@ export function HeroCarousel({
       >
         <motion.div
           className="flex h-full items-center justify-center pl-0.5"
-          animate={reduceMotion ? undefined : { x: [0, -4, 0] }}
-          transition={reduceMotion ? undefined : { repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
+          animate={reduceMotion ? undefined : { x: [0, -6, 0] }}
+          transition={
+            reduceMotion
+              ? undefined
+              : { repeat: Infinity, duration: 2.1, ease: [0.45, 0, 0.55, 1] }
+          }
         >
-          <div className="h-14 w-1 rounded-full bg-ff-glow/30 shadow-[0_0_10px_rgba(200,255,120,0.2)]" />
+          <div className="h-16 w-1 rounded-full bg-gradient-to-b from-ff-glow/15 via-ff-glow/45 to-ff-glow/15 shadow-[0_0_14px_rgba(200,255,120,0.28)]" />
         </motion.div>
       </div>
       <div
@@ -652,38 +741,89 @@ export function HeroCarousel({
       >
         <motion.div
           className="flex h-full items-center justify-center pr-0.5"
-          animate={reduceMotion ? undefined : { x: [0, 4, 0] }}
-          transition={reduceMotion ? undefined : { repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
+          animate={reduceMotion ? undefined : { x: [0, 6, 0] }}
+          transition={
+            reduceMotion
+              ? undefined
+              : { repeat: Infinity, duration: 2.1, ease: [0.45, 0, 0.55, 1] }
+          }
         >
-          <div className="h-14 w-1 rounded-full bg-ff-glow/30 shadow-[0_0_10px_rgba(200,255,120,0.2)]" />
+          <div className="h-16 w-1 rounded-full bg-gradient-to-b from-ff-glow/15 via-ff-glow/45 to-ff-glow/15 shadow-[0_0_14px_rgba(200,255,120,0.28)]" />
         </motion.div>
       </div>
 
       {hintVisible && (
         <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="pointer-events-none absolute left-1/2 top-[min(14%,6rem)] z-30 flex -translate-x-1/2 flex-col items-center gap-1.5"
+          initial={{ opacity: 0, y: 8, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ type: "spring", stiffness: 320, damping: 24 }}
+          className="pointer-events-none absolute left-1/2 top-[min(12%,5.25rem)] z-30 flex -translate-x-1/2 flex-col items-center gap-1.5"
         >
-          <div className="flex items-center gap-2 rounded-full border border-ff-glow/45 bg-[#03080f]/80 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-ff-glow shadow-[0_0_16px_rgba(200,255,120,0.18)]">
+          <motion.div
+            className="flex items-center gap-1.5 rounded-full border border-ff-glow/45 bg-[#03080f]/82 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-ff-glow shadow-[0_0_20px_rgba(200,255,120,0.2)] backdrop-blur-sm"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: {},
+              visible: {
+                transition: { staggerChildren: 0.048, delayChildren: 0.06 },
+              },
+            }}
+          >
             <motion.span
               className="text-ff-mint"
-              animate={{ x: [0, -5, 0] }}
-              transition={{ repeat: Infinity, duration: 1.1 }}
+              variants={{
+                hidden: { opacity: 0, x: 8 },
+                visible: {
+                  opacity: 1,
+                  x: 0,
+                  transition: { type: "spring", stiffness: 420, damping: 20 },
+                },
+              }}
+              animate={reduceMotion ? undefined : { x: [0, -5, 0] }}
+              transition={
+                reduceMotion ? undefined : { repeat: Infinity, duration: 1.4, ease: "easeInOut" }
+              }
               aria-hidden
             >
               ←
             </motion.span>
-            <span>Swipe</span>
+            {"Swipe".split("").map((ch, i) => (
+              <motion.span
+                key={i}
+                className="inline-block"
+                variants={{
+                  hidden: { opacity: 0, y: 8, filter: "blur(6px)" },
+                  visible: {
+                    opacity: 1,
+                    y: 0,
+                    filter: "blur(0px)",
+                    transition: { type: "spring", stiffness: 400, damping: 22 },
+                  },
+                }}
+              >
+                {ch}
+              </motion.span>
+            ))}
             <motion.span
               className="text-ff-mint"
-              animate={{ x: [0, 5, 0] }}
-              transition={{ repeat: Infinity, duration: 1.1 }}
+              variants={{
+                hidden: { opacity: 0, x: -8 },
+                visible: {
+                  opacity: 1,
+                  x: 0,
+                  transition: { type: "spring", stiffness: 420, damping: 20 },
+                },
+              }}
+              animate={reduceMotion ? undefined : { x: [0, 5, 0] }}
+              transition={
+                reduceMotion ? undefined : { repeat: Infinity, duration: 1.4, ease: "easeInOut" }
+              }
               aria-hidden
             >
               →
             </motion.span>
-          </div>
+          </motion.div>
         </motion.div>
       )}
 
@@ -703,7 +843,7 @@ export function HeroCarousel({
               (i === activeLogical ? "bg-ff-glow ff-shadow-glow-sm" : "bg-white/35")
             }
             whileTap={reduceMotion ? undefined : { scale: 0.88 }}
-            transition={{ type: "spring", stiffness: 500, damping: 28 }}
+            transition={{ type: "spring", stiffness: 520, damping: 26 }}
           />
         ))}
       </div>

@@ -24,7 +24,7 @@ export function EventOffersRow({ offers }: Props) {
   const reduce = useReducedMotion();
 
   return (
-    <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 pl-1 pr-1 pt-1 [-ms-overflow-style:none] [scrollbar-width:none] md:gap-6 md:pb-4 [&::-webkit-scrollbar]:hidden">
+    <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 pl-0.5 pr-0.5 pt-0.5 [-ms-overflow-style:none] [scrollbar-width:none] md:gap-5 md:pb-2 [&::-webkit-scrollbar]:hidden">
       {offers.map((offer, i) => {
         const dateLabel = formatOfferDate(offer.eventDate);
         return (

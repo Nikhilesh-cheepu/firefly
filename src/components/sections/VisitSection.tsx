@@ -11,7 +11,7 @@ export function VisitSection({ settings }: Props) {
   return (
     <SectionReveal
       id="visit"
-      className="scroll-mt-6 bg-gradient-to-b from-ff-void to-ff-forest/30 px-4 py-16 sm:px-6 md:py-20"
+      className="scroll-mt-6 bg-gradient-to-b from-ff-void to-ff-forest/30 px-4 py-12 sm:px-6 md:py-14"
     >
       <div className="mx-auto max-w-6xl text-center md:text-left">
         <FadeInChild>

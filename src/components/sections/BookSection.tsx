@@ -5,7 +5,7 @@ export function BookSection() {
   return (
     <SectionReveal
       id="book"
-      className="scroll-mt-6 border-t border-ff-glow/15 bg-ff-void px-4 py-16 sm:px-6"
+      className="scroll-mt-6 bg-ff-void px-4 py-12 sm:px-6 md:py-14"
     >
       <div className="mx-auto max-w-xl text-center">
         <FadeInChild>
