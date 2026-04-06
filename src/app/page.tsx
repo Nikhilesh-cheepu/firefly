@@ -1,12 +1,13 @@
+import { Suspense } from "react";
+import { HomeEventsBlock } from "@/app/HomeEventsBlock";
 import { SectionBridge } from "@/components/SectionBridge";
 import { StickyBar } from "@/components/StickyBar";
 import { BookSection } from "@/components/sections/BookSection";
-import { EventsSection } from "@/components/sections/EventsSection";
+import { EventsSectionSkeleton } from "@/components/sections/EventsSectionSkeleton";
 import { GallerySection } from "@/components/sections/GallerySection";
 import { HeroCarousel } from "@/components/sections/HeroCarousel";
 import { MenuSection } from "@/components/sections/MenuSection";
 import { VisitSection } from "@/components/sections/VisitSection";
-import { getFireflyOffersFromBassik } from "@/lib/bassik";
 import {
   getGalleryImages,
   getHeroSlides,
@@ -17,12 +18,11 @@ import {
 export const revalidate = 30;
 
 export default async function Home() {
-  const [settings, heroSlides, categories, gallery, offers] = await Promise.all([
+  const [settings, heroSlides, categories, gallery] = await Promise.all([
     getSiteSettings(),
     getHeroSlides(),
     getMenuCategories(),
     getGalleryImages(),
-    getFireflyOffersFromBassik(),
   ]);
 
   return (
@@ -34,7 +34,9 @@ export default async function Home() {
           fallbackPoster={settings.heroPosterUrl}
         />
         <SectionBridge className="from-ff-hero-void via-ff-deep/45 to-ff-deep" />
-        <EventsSection offers={offers} />
+        <Suspense fallback={<EventsSectionSkeleton />}>
+          <HomeEventsBlock />
+        </Suspense>
         <SectionBridge className="from-ff-deep via-ff-forest/25 to-ff-forest/40" />
         <MenuSection categories={categories} />
         <SectionBridge className="from-ff-void via-ff-deep/60 to-ff-deep" />

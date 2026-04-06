@@ -35,9 +35,14 @@ export function MenuSection({ categories }: Props) {
 
         {categories.length === 0 ? (
           <FadeInChild delay={0.08}>
-            <p className="ff-card rounded-2xl border border-ff-glow/15 bg-ff-void/50 px-6 py-10 text-center text-ff-mist/80 backdrop-blur-sm">
-              Menu coming soon. Connect <code className="text-ff-glow/90">DATABASE_URL</code> and seed
-              categories, or add rows via Prisma Studio.
+            <p className="ff-card rounded-2xl border border-ff-glow/15 bg-ff-void/50 px-6 py-10 text-center text-sm leading-relaxed text-ff-mist/80 backdrop-blur-sm">
+              Menu cards come from Postgres (admin + Prisma). Set{" "}
+              <code className="text-ff-glow/90">DATABASE_URL</code> /{" "}
+              <code className="text-ff-glow/90">DATABASE_PUBLIC_URL</code> in{" "}
+              <code className="text-ff-glow/90">.env.local</code>, run{" "}
+              <code className="text-ff-glow/90">npm run db:push</code>, then add categories in admin. Events
+              &amp; offers above are separate — they use{" "}
+              <code className="text-ff-glow/90">BASSIK_BASE_URL</code>.
             </p>
           </FadeInChild>
         ) : (

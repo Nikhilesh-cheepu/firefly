@@ -5,9 +5,11 @@ import { EventOffersRow } from "@/components/sections/EventOffersRow";
 
 type Props = {
   offers: BassikOffer[];
+  /** When false and there are no offers, show setup hint instead of generic copy. */
+  bassikConfigured?: boolean;
 };
 
-export function EventsSection({ offers }: Props) {
+export function EventsSection({ offers, bassikConfigured = true }: Props) {
   return (
     <SectionReveal
       id="events"
@@ -30,8 +32,28 @@ export function EventsSection({ offers }: Props) {
 
         {offers.length === 0 ? (
           <FadeInChild delay={0.08}>
-            <p className="ff-card rounded-2xl border border-ff-glow/15 bg-ff-void/60 px-5 py-8 text-center text-sm text-ff-mist/85 backdrop-blur-sm">
-              New nights and offers will show up here soon. Check back shortly.
+            <p className="ff-card rounded-2xl border border-ff-glow/15 bg-ff-void/60 px-5 py-8 text-center text-sm leading-relaxed text-ff-mist/85 backdrop-blur-sm">
+              {!bassikConfigured ? (
+                <>
+                  Live offers load from your Bassik venue API. Add{" "}
+                  <code className="rounded bg-ff-deep px-1 py-0.5 text-ff-glow/90">BASSIK_BASE_URL</code>{" "}
+                  to <code className="rounded bg-ff-deep px-1 py-0.5 text-ff-glow/90">.env.local</code>{" "}
+                  (see <code className="rounded bg-ff-deep px-1 py-0.5 text-ff-glow/90">.env.example</code>
+                  ). The home page calls{" "}
+                  <code className="rounded bg-ff-deep px-1 py-0.5 text-ff-glow/90">
+                    /api/venues/firefly
+                  </code>
+                  .
+                </>
+              ) : (
+                <>
+                  No offers are live right now. When they are published in Bassik, they will appear here.
+                  If you expected data, check that the API returns{" "}
+                  <code className="rounded bg-ff-deep px-1 py-0.5 text-ff-glow/90">offers</code> (or{" "}
+                  <code className="rounded bg-ff-deep px-1 py-0.5 text-ff-glow/90">venue.offers</code>
+                  ).
+                </>
+              )}
             </p>
           </FadeInChild>
         ) : (

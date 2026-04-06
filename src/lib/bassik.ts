@@ -9,6 +9,17 @@ export type BassikOffer = {
   endDate?: string | null;
 };
 
+/** True when `BASSIK_BASE_URL` is set (server-only). */
+export function isBassikOffersConfigured(): boolean {
+  return Boolean(process.env.BASSIK_BASE_URL?.trim());
+}
+
+function bassikFetchTimeoutMs(): number {
+  const n = Number(process.env.BASSIK_FETCH_TIMEOUT_MS);
+  if (Number.isFinite(n) && n > 0) return Math.min(n, 30_000);
+  return 4000;
+}
+
 function normalizeOffers(raw: unknown): BassikOffer[] {
   if (!Array.isArray(raw)) return [];
   return raw
@@ -35,10 +46,15 @@ export async function getFireflyOffersFromBassik(): Promise<BassikOffer[]> {
   const base = process.env.BASSIK_BASE_URL?.replace(/\/$/, "");
   if (!base) return [];
 
+  const ms = bassikFetchTimeoutMs();
+  const ctrl = new AbortController();
+  const kill = setTimeout(() => ctrl.abort(), ms);
+
   try {
     const res = await fetch(`${base}/api/venues/firefly`, {
       next: { revalidate: 30 },
       headers: { Accept: "application/json" },
+      signal: ctrl.signal,
     });
 
     if (!res.ok) return [];
@@ -56,5 +72,7 @@ export async function getFireflyOffersFromBassik(): Promise<BassikOffer[]> {
     return [];
   } catch {
     return [];
+  } finally {
+    clearTimeout(kill);
   }
 }
