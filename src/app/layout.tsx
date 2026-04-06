@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Bebas_Neue, DM_Sans, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { RestoreScrollOnLoad } from "@/components/RestoreScrollOnLoad";
 import "./globals.css";
 
@@ -42,6 +43,9 @@ export default function RootLayout({
       className={`${display.variable} ${dmSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col [overflow-anchor:none] bg-ff-hero-void text-zinc-50">
+        <Script id="firefly-scroll-bootstrap" strategy="beforeInteractive">
+          {`(function(){try{if(location.hash)return;if('scrollRestoration'in history)history.scrollRestoration='manual';function s(){scrollTo(0,0);document.documentElement.scrollTop=0;document.documentElement.scrollLeft=0;document.body.scrollTop=0;document.body.scrollLeft=0;}s();addEventListener('pageshow',function(){if(!location.hash){if('scrollRestoration'in history)history.scrollRestoration='manual';s();}});}catch(_){}})();`}
+        </Script>
         <RestoreScrollOnLoad />
         {children}
       </body>

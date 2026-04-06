@@ -53,6 +53,7 @@ html {
 }
 
 body {
+  overflow-anchor: none;
   background: radial-gradient(ellipse 120% 80% at 50% -20%, rgba(124, 245, 198, 0.08), transparent),
     radial-gradient(ellipse 80% 50% at 100% 50%, rgba(107, 92, 255, 0.06), transparent),
     var(--background);
