@@ -225,10 +225,14 @@ function HeroAmbientBackdrop({
                 draggable={false}
               />
             ) : (
-              // No second video fetch — foreground card already loads the file; duplicate was slowing first paint + swipes.
-              <div
-                className="h-full w-full min-h-[120%] min-w-[120%] [transform:translateZ(0)] scale-110 blur-[min(22vw,9rem)] brightness-125 opacity-[0.6] bg-gradient-to-br from-ff-mint/25 via-ff-forest/70 to-ff-void"
-                aria-hidden
+              <video
+                className={AMBIENT_MEDIA}
+                src={slide.mediaUrl}
+                muted
+                playsInline
+                autoPlay
+                loop
+                preload="auto"
               />
             )}
           </div>
