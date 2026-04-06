@@ -68,8 +68,7 @@ function extendedToLogical(extIdx: number, nSlides: number): number {
 }
 
 /**
- * Per-slide preload: center + immediate neighbors use `auto` (buffer before swipe ends);
- * ±2 ring uses `metadata` only. Far slides: no `src` (saves bandwidth vs loading everything).
+ * Videos: always load `src` + preload auto (instant play on swipe). Images: ±2 window to save bytes.
  */
 function buildHeroLoadPlan(
   mode: "simple" | "infinite",
@@ -84,9 +83,14 @@ function buildHeroLoadPlan(
     const i = loopSlides.findIndex((s) => s.instanceKey === activeVideoSyncKey);
     const idx = i >= 0 ? i : 1;
     for (let j = 0; j < loopSlides.length; j++) {
+      const item = loopSlides[j]!;
+      if (item.type === "VIDEO") {
+        map.set(item.instanceKey, "auto");
+        continue;
+      }
       const d = Math.abs(j - idx);
       if (d <= 2) {
-        map.set(loopSlides[j]!.instanceKey, d <= 1 ? "auto" : "metadata");
+        map.set(item.instanceKey, d <= 1 ? "auto" : "metadata");
       }
     }
     return map;
@@ -95,9 +99,14 @@ function buildHeroLoadPlan(
   const i = normalized.findIndex((s) => s.key === activeVideoSyncKey);
   const idx = i >= 0 ? i : 0;
   for (let j = 0; j < normalized.length; j++) {
+    const s = normalized[j]!;
+    if (s.type === "VIDEO") {
+      map.set(s.key, "auto");
+      continue;
+    }
     const d = Math.abs(j - idx);
     if (d <= 2) {
-      map.set(normalized[j]!.key, d <= 1 ? "auto" : "metadata");
+      map.set(s.key, d <= 1 ? "auto" : "metadata");
     }
   }
   return map;
@@ -541,9 +550,20 @@ export function HeroCarousel({
       if (!v || v.tagName !== "VIDEO") return;
       if (key === activeVideoSyncKey) {
         if (!v.src) return;
-        const play = () => void v.play().catch(() => {});
-        if (v.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) play();
-        else v.addEventListener("canplay", play, { once: true });
+        const play = () => {
+          void v.play().catch(() => {});
+        };
+        if (v.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+          play();
+        } else {
+          const onReady = () => {
+            v.removeEventListener("loadeddata", onReady);
+            v.removeEventListener("canplay", onReady);
+            play();
+          };
+          v.addEventListener("loadeddata", onReady);
+          v.addEventListener("canplay", onReady);
+        }
       } else {
         v.pause();
         try {
@@ -557,8 +577,12 @@ export function HeroCarousel({
 
   useEffect(() => {
     if (normalized.length === 0) return;
-    queueMicrotask(() => syncHeroVideos());
-  }, [syncHeroVideos, soundEnabled, normalized.length]);
+    const run = () => {
+      syncHeroVideos();
+      requestAnimationFrame(() => syncHeroVideos());
+    };
+    queueMicrotask(run);
+  }, [syncHeroVideos, soundEnabled, normalized.length, activeVideoSyncKey]);
 
   useEffect(() => {
     activeLogicalRef.current = activeLogical;

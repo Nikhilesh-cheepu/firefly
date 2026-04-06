@@ -50,7 +50,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col [overflow-anchor:none] bg-ff-hero-void text-zinc-50">
         <Script id="firefly-scroll-bootstrap" strategy="beforeInteractive">
-          {`(function(){try{if(location.hash)return;if('scrollRestoration'in history)history.scrollRestoration='manual';function s(){scrollTo(0,0);document.documentElement.scrollTop=0;document.documentElement.scrollLeft=0;document.body.scrollTop=0;document.body.scrollLeft=0;}s();addEventListener('pageshow',function(){if(!location.hash){if('scrollRestoration'in history)history.scrollRestoration='manual';s();}});}catch(_){}})();`}
+          {`(function(){try{function stripBook(){if(location.hash==='#book'){history.replaceState(null,'',location.pathname+(location.search||''));return true}return false}function otherHash(){return location.hash&&location.hash!=='#book'}if(otherHash())return;stripBook();if('scrollRestoration'in history)history.scrollRestoration='manual';function s(){scrollTo(0,0);document.documentElement.scrollTop=0;document.documentElement.scrollLeft=0;document.body.scrollTop=0;document.body.scrollLeft=0;}s();addEventListener('pageshow',function(){if(otherHash())return;stripBook();if('scrollRestoration'in history)history.scrollRestoration='manual';s();});}catch(_){}})();`}
         </Script>
         <RestoreScrollOnLoad />
         {children}

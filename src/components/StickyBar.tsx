@@ -68,6 +68,17 @@ function IconMail({ className }: { className?: string }) {
   );
 }
 
+function scrollToDomId(id: string, smooth: boolean) {
+  document.getElementById(id)?.scrollIntoView({
+    behavior: smooth ? "smooth" : "auto",
+    block: "start",
+  });
+}
+
+function isExternalUrl(url: string): boolean {
+  return /^https?:\/\//i.test(url.trim());
+}
+
 type SheetAction = {
   key: string;
   href: string;
@@ -159,6 +170,53 @@ export function StickyBar({ settings }: Props) {
     ? { duration: 0.2 }
     : { type: "spring" as const, stiffness: 420, damping: 34 };
 
+  const bookClassName =
+    "inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-gradient-to-r from-ff-glow to-ff-glow-dim px-4 py-2.5 text-sm font-semibold text-ff-void ff-shadow-primary";
+
+  const bookRaw = (settings.bookTableUrl ?? "#book").trim();
+  const bookNode = (() => {
+    if (isExternalUrl(bookRaw)) {
+      return (
+        <a
+          href={bookRaw}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={bookClassName}
+        >
+          Book table
+        </a>
+      );
+    }
+    if (bookRaw === "#book" || bookRaw === "" || bookRaw === "/#book") {
+      return (
+        <button
+          type="button"
+          className={bookClassName}
+          onClick={() => scrollToDomId("book", !reduce)}
+        >
+          Book table
+        </button>
+      );
+    }
+    if (bookRaw.startsWith("#") && bookRaw.length > 1) {
+      const id = bookRaw.slice(1);
+      return (
+        <button
+          type="button"
+          className={bookClassName}
+          onClick={() => scrollToDomId(id, !reduce)}
+        >
+          Book table
+        </button>
+      );
+    }
+    return (
+      <Link href={bookRaw} className={bookClassName} scroll={!bookRaw.includes("#")}>
+        Book table
+      </Link>
+    );
+  })();
+
   return (
     <>
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center pb-[max(0.5rem,env(safe-area-inset-bottom))] px-2">
@@ -176,12 +234,7 @@ export function StickyBar({ settings }: Props) {
               whileTap={tap}
               transition={spring}
             >
-              <Link
-                href={settings.bookTableUrl ?? "#book"}
-                className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-gradient-to-r from-ff-glow to-ff-glow-dim px-4 py-2.5 text-sm font-semibold text-ff-void ff-shadow-primary"
-              >
-                Book table
-              </Link>
+              {bookNode}
             </motion.div>
             <motion.button
               type="button"

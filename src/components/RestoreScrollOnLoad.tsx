@@ -8,7 +8,12 @@ import { useEffect, useLayoutEffect } from "react";
  */
 function hardScrollTop() {
   if (typeof window === "undefined") return;
-  if (window.location.hash) return;
+  /* Clicking "Book table" used <Link href="#book"> → reload kept #book and jumped to footer. */
+  if (window.location.hash === "#book") {
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search || ""}`);
+  } else if (window.location.hash) {
+    return;
+  }
   window.scrollTo(0, 0);
   document.documentElement.scrollTop = 0;
   document.documentElement.scrollLeft = 0;
@@ -32,7 +37,6 @@ export function RestoreScrollOnLoad() {
     window.history.scrollRestoration = "manual";
 
     const onPageShow = () => {
-      if (window.location.hash) return;
       window.history.scrollRestoration = "manual";
       hardScrollTop();
     };
