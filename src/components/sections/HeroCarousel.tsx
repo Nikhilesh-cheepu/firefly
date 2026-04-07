@@ -3,7 +3,14 @@
 import type { HeroSlide, HeroSlideType } from "@prisma/client";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { MutableRefObject, ReactNode } from "react";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 export type HeroCarouselProps = {
   slides: HeroSlide[];
@@ -119,20 +126,44 @@ function prepareHeroVideoEl(v: HTMLVideoElement) {
   v.setAttribute("webkit-playsinline", "");
 }
 
-function tryPlayHeroVideo(v: HTMLVideoElement, wantSound: boolean) {
+/**
+ * Unmuted play() usually fails on iOS/Android without a user gesture (slide swipe does not count).
+ * Start muted, await play(), then unmute — same global sound applies to every slide after the first unlock.
+ */
+async function tryPlayHeroVideo(v: HTMLVideoElement, wantSound: boolean) {
   prepareHeroVideoEl(v);
-  v.muted = !wantSound;
-  const run = () => {
-    void v.play().catch(() => {
-      if (!wantSound) return;
+  const attempt = async () => {
+    if (!wantSound) {
       v.muted = true;
-      void v.play().catch(() => {});
+      await v.play().catch(() => {});
+      return;
+    }
+    v.muted = true;
+    try {
+      await v.play();
+    } catch {
+      await v.play().catch(() => {});
+    }
+    try {
+      v.muted = false;
+    } catch {
+      /* ignore */
+    }
+    requestAnimationFrame(() => {
+      try {
+        v.muted = false;
+      } catch {
+        /* ignore */
+      }
     });
   };
   if (v.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-    run();
+    await attempt();
   } else {
-    v.addEventListener("canplay", run, { once: true });
+    await new Promise<void>((resolve) => {
+      v.addEventListener("canplay", () => resolve(), { once: true });
+    });
+    await attempt();
   }
 }
 
@@ -161,13 +192,11 @@ function IconVolumeOff({ className }: { className?: string }) {
 function HeroSoundToggle({
   soundEnabled,
   setSoundEnabled,
-  videoRefs,
-  activeInstanceKey,
+  setHeroUnmutedPlayback,
 }: {
   soundEnabled: boolean;
   setSoundEnabled: (v: boolean) => void;
-  videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
-  activeInstanceKey: string;
+  setHeroUnmutedPlayback: (v: boolean) => void;
 }) {
   return (
     <div className="pointer-events-none absolute bottom-[calc(7.25rem+env(safe-area-inset-bottom))] right-3 z-30 md:right-5">
@@ -178,23 +207,8 @@ function HeroSoundToggle({
         onClick={() => {
           const next = !soundEnabled;
           setSoundEnabled(next);
-          if (next && activeInstanceKey) {
-            queueMicrotask(() => {
-              const v = videoRefs.current.get(activeInstanceKey);
-              if (v) {
-                prepareHeroVideoEl(v);
-                v.muted = false;
-                void v.play().catch(() => {});
-              }
-            });
-          } else if (!next && activeInstanceKey) {
-            queueMicrotask(() => {
-              const v = videoRefs.current.get(activeInstanceKey);
-              if (v) {
-                v.muted = true;
-                void v.play().catch(() => {});
-              }
-            });
+          if (next) {
+            setHeroUnmutedPlayback(true);
           }
         }}
         className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-ff-glow/40 bg-[#03080f]/85 text-ff-glow shadow-[0_0_18px_rgba(200,255,120,0.16)] backdrop-blur-md transition hover:border-ff-mint/50 hover:text-ff-mint"
@@ -289,15 +303,18 @@ function HeroBackdrop({
   instanceKey,
   activeInstanceKey,
   soundEnabled,
+  heroUnmutedPlayback,
   videoRefs,
 }: {
   slide: NormalizedSlide;
   instanceKey: string;
   activeInstanceKey: string;
   soundEnabled: boolean;
+  heroUnmutedPlayback: boolean;
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
 }) {
-  const audible = soundEnabled && instanceKey === activeInstanceKey;
+  const audible =
+    soundEnabled && instanceKey === activeInstanceKey && heroUnmutedPlayback;
   if (slide.type === "VIDEO") {
     return (
       <HeroMediaCard>
@@ -340,6 +357,7 @@ function HeroSlideMedia({
   instanceKey,
   activeInstanceKey,
   soundEnabled,
+  heroUnmutedPlayback,
   videoRefs,
   loadMedia,
   videoPreload,
@@ -349,12 +367,14 @@ function HeroSlideMedia({
   instanceKey: string;
   activeInstanceKey: string;
   soundEnabled: boolean;
+  heroUnmutedPlayback: boolean;
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
   loadMedia: boolean;
   videoPreload: "none" | "metadata" | "auto";
   imageFetchPriority?: "high" | "low" | "auto";
 }) {
-  const audible = soundEnabled && instanceKey === activeInstanceKey;
+  const audible =
+    soundEnabled && instanceKey === activeInstanceKey && heroUnmutedPlayback;
   if (slide.type === "VIDEO") {
     return (
       <video
@@ -390,6 +410,7 @@ function HeroSlideColumn({
   videoRefs,
   activeInstanceKey,
   soundEnabled,
+  heroUnmutedPlayback,
   isActive,
   reduceMotion,
   loadMedia,
@@ -400,6 +421,7 @@ function HeroSlideColumn({
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
   activeInstanceKey: string;
   soundEnabled: boolean;
+  heroUnmutedPlayback: boolean;
   isActive: boolean;
   reduceMotion: boolean;
   loadMedia: boolean;
@@ -428,6 +450,7 @@ function HeroSlideColumn({
               instanceKey={loopItem.instanceKey}
               activeInstanceKey={activeInstanceKey}
               soundEnabled={soundEnabled}
+              heroUnmutedPlayback={heroUnmutedPlayback}
               videoRefs={videoRefs}
               loadMedia={loadMedia}
               videoPreload={videoPreload}
@@ -456,7 +479,10 @@ export function HeroCarousel({
   const [activeInstanceKey, setActiveInstanceKey] = useState("");
   const [hintVisible, setHintVisible] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(false);
+  /** Keeps `muted` in JSX false only after muted-first play succeeds (or user unmutes) so React does not force unmuted before play on iOS. */
+  const [heroUnmutedPlayback, setHeroUnmutedPlayback] = useState(false);
   const videoRefs = useRef<Map<string, HTMLVideoElement | null>>(new Map());
+  const activeVideoSyncKeyRef = useRef("");
 
   const normalized = useMemo<NormalizedSlide[]>(() => {
     if (slides.length > 0) {
@@ -532,6 +558,18 @@ export function HeroCarousel({
     );
   }, [normalized, activeInstanceKey, loopSlides]);
 
+  /** Reset unmuted JSX flag when the active slide or mute preference changes (render-time reset avoids cascading effect setState). */
+  const [syncKeySnapshot, setSyncKeySnapshot] = useState(activeVideoSyncKey);
+  if (activeVideoSyncKey !== syncKeySnapshot) {
+    setSyncKeySnapshot(activeVideoSyncKey);
+    setHeroUnmutedPlayback(false);
+  }
+  const [soundSnapshot, setSoundSnapshot] = useState(soundEnabled);
+  if (soundEnabled !== soundSnapshot) {
+    setSoundSnapshot(soundEnabled);
+    if (!soundEnabled) setHeroUnmutedPlayback(false);
+  }
+
   const heroLoadPlan = useMemo(() => {
     if (mode !== "simple" && mode !== "infinite") return null;
     return buildHeroLoadPlan(mode, loopSlides, normalized, activeVideoSyncKey);
@@ -577,12 +615,18 @@ export function HeroCarousel({
   }, [mode, loopSlides, normalized]);
 
   const syncHeroVideos = useCallback(() => {
+    const activeKey = activeVideoSyncKey;
+    activeVideoSyncKeyRef.current = activeKey;
     videoRefs.current.forEach((v, key) => {
       if (!v || v.tagName !== "VIDEO") return;
-      if (key === activeVideoSyncKey) {
+      if (key === activeKey) {
         if (!v.src) return;
-        const wantSound = soundEnabled && key === activeVideoSyncKey;
-        tryPlayHeroVideo(v, wantSound);
+        const wantSound = soundEnabled && key === activeKey;
+        void tryPlayHeroVideo(v, wantSound).then(() => {
+          if (wantSound && key === activeVideoSyncKeyRef.current) {
+            setHeroUnmutedPlayback(true);
+          }
+        });
       } else {
         prepareHeroVideoEl(v);
         v.muted = true;
@@ -798,6 +842,7 @@ export function HeroCarousel({
             instanceKey={ik}
             activeInstanceKey={ik}
             soundEnabled={soundEnabled}
+            heroUnmutedPlayback={heroUnmutedPlayback}
             videoRefs={videoRefs}
           />
         </div>
@@ -805,8 +850,7 @@ export function HeroCarousel({
           <HeroSoundToggle
             soundEnabled={soundEnabled}
             setSoundEnabled={setSoundEnabled}
-            videoRefs={videoRefs}
-            activeInstanceKey={ik}
+            setHeroUnmutedPlayback={setHeroUnmutedPlayback}
           />
         )}
       </section>
@@ -847,6 +891,7 @@ export function HeroCarousel({
                   videoRefs={videoRefs}
                   activeInstanceKey={soundTargetInstanceKey}
                   soundEnabled={soundEnabled}
+                  heroUnmutedPlayback={heroUnmutedPlayback}
                   isActive={item.key === activeSlideKey}
                   reduceMotion={!!reduceMotion}
                   loadMedia={loadMedia}
@@ -866,6 +911,7 @@ export function HeroCarousel({
                   videoRefs={videoRefs}
                   activeInstanceKey={soundTargetInstanceKey}
                   soundEnabled={soundEnabled}
+                  heroUnmutedPlayback={heroUnmutedPlayback}
                   isActive={s.key === activeSlideKey}
                   reduceMotion={!!reduceMotion}
                   loadMedia={loadMedia}
@@ -880,8 +926,7 @@ export function HeroCarousel({
         <HeroSoundToggle
           soundEnabled={soundEnabled}
           setSoundEnabled={setSoundEnabled}
-          videoRefs={videoRefs}
-          activeInstanceKey={soundTargetInstanceKey}
+          setHeroUnmutedPlayback={setHeroUnmutedPlayback}
         />
       )}
 
