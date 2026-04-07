@@ -112,6 +112,30 @@ function buildHeroLoadPlan(
   return map;
 }
 
+/** iOS/Android: set muted + playsInline in JS before play(); a second <video> with the same src blocks foreground playback. */
+function prepareHeroVideoEl(v: HTMLVideoElement) {
+  v.playsInline = true;
+  v.setAttribute("playsinline", "");
+  v.setAttribute("webkit-playsinline", "");
+}
+
+function tryPlayHeroVideo(v: HTMLVideoElement, wantSound: boolean) {
+  prepareHeroVideoEl(v);
+  v.muted = !wantSound;
+  const run = () => {
+    void v.play().catch(() => {
+      if (!wantSound) return;
+      v.muted = true;
+      void v.play().catch(() => {});
+    });
+  };
+  if (v.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+    run();
+  } else {
+    v.addEventListener("canplay", run, { once: true });
+  }
+}
+
 function IconVolumeOn({ className }: { className?: string }) {
   return (
     <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -158,7 +182,16 @@ function HeroSoundToggle({
             queueMicrotask(() => {
               const v = videoRefs.current.get(activeInstanceKey);
               if (v) {
+                prepareHeroVideoEl(v);
                 v.muted = false;
+                void v.play().catch(() => {});
+              }
+            });
+          } else if (!next && activeInstanceKey) {
+            queueMicrotask(() => {
+              const v = videoRefs.current.get(activeInstanceKey);
+              if (v) {
+                v.muted = true;
                 void v.play().catch(() => {});
               }
             });
@@ -234,14 +267,10 @@ function HeroAmbientBackdrop({
                 draggable={false}
               />
             ) : (
-              <video
-                className={AMBIENT_MEDIA}
-                src={slide.mediaUrl}
-                muted
-                playsInline
-                autoPlay
-                loop
-                preload="auto"
+              /* No second <video> with same src — iOS WebKit often blocks play() on the foreground until the duplicate stops. */
+              <div
+                className="h-full w-full min-h-[120%] min-w-[120%] [transform:translateZ(0)] scale-110 blur-[min(22vw,9rem)] brightness-125 opacity-[0.62] bg-gradient-to-br from-ff-mint/20 via-ff-forest/75 to-ff-void"
+                aria-hidden
               />
             )}
           </div>
@@ -276,6 +305,7 @@ function HeroBackdrop({
           <video
             ref={(el) => {
               videoRefs.current.set(instanceKey, el);
+              if (el) prepareHeroVideoEl(el);
             }}
             className="pointer-events-none h-full w-full object-contain select-none"
             src={slide.mediaUrl}
@@ -330,6 +360,7 @@ function HeroSlideMedia({
       <video
         ref={(el) => {
           videoRefs.current.set(instanceKey, el);
+          if (el) prepareHeroVideoEl(el);
         }}
         className="pointer-events-none h-full w-full object-contain select-none"
         src={loadMedia ? slide.mediaUrl : undefined}
@@ -550,21 +581,11 @@ export function HeroCarousel({
       if (!v || v.tagName !== "VIDEO") return;
       if (key === activeVideoSyncKey) {
         if (!v.src) return;
-        const play = () => {
-          void v.play().catch(() => {});
-        };
-        if (v.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-          play();
-        } else {
-          const onReady = () => {
-            v.removeEventListener("loadeddata", onReady);
-            v.removeEventListener("canplay", onReady);
-            play();
-          };
-          v.addEventListener("loadeddata", onReady);
-          v.addEventListener("canplay", onReady);
-        }
+        const wantSound = soundEnabled && key === activeVideoSyncKey;
+        tryPlayHeroVideo(v, wantSound);
       } else {
+        prepareHeroVideoEl(v);
+        v.muted = true;
         v.pause();
         try {
           v.currentTime = 0;
@@ -573,7 +594,7 @@ export function HeroCarousel({
         }
       }
     });
-  }, [activeVideoSyncKey]);
+  }, [activeVideoSyncKey, soundEnabled]);
 
   useEffect(() => {
     if (normalized.length === 0) return;
