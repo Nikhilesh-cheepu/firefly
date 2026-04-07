@@ -11,6 +11,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { flushSync } from "react-dom";
 
 export type HeroCarouselProps = {
   slides: HeroSlide[];
@@ -129,8 +130,13 @@ function prepareHeroVideoEl(v: HTMLVideoElement) {
 /**
  * Unmuted play() usually fails on iOS/Android without a user gesture (slide swipe does not count).
  * Start muted, await play(), then unmute — same global sound applies to every slide after the first unlock.
+ * `onBeforeUnmute` runs after play() succeeds so the parent can flush React `muted={false}` before we touch the DOM.
  */
-async function tryPlayHeroVideo(v: HTMLVideoElement, wantSound: boolean) {
+async function tryPlayHeroVideo(
+  v: HTMLVideoElement,
+  wantSound: boolean,
+  onBeforeUnmute?: () => void,
+) {
   prepareHeroVideoEl(v);
   const attempt = async () => {
     if (!wantSound) {
@@ -144,6 +150,7 @@ async function tryPlayHeroVideo(v: HTMLVideoElement, wantSound: boolean) {
     } catch {
       await v.play().catch(() => {});
     }
+    onBeforeUnmute?.();
     try {
       v.muted = false;
     } catch {
@@ -558,11 +565,16 @@ export function HeroCarousel({
     );
   }, [normalized, activeInstanceKey, loopSlides]);
 
-  /** Reset unmuted JSX flag when the active slide or mute preference changes (render-time reset avoids cascading effect setState). */
+  /** Track active slide for render-time sync (avoid effect setState). */
   const [syncKeySnapshot, setSyncKeySnapshot] = useState(activeVideoSyncKey);
   if (activeVideoSyncKey !== syncKeySnapshot) {
     setSyncKeySnapshot(activeVideoSyncKey);
-    setHeroUnmutedPlayback(false);
+    // After the user unmutes once (soundEnabled), do NOT clear heroUnmutedPlayback on swipe.
+    // If we did, React keeps muted={true} on the new slide until tryPlayHeroVideo() finishes.
+    // On iOS that window can overwrite imperative v.muted = false, so audio stays off until another tap.
+    if (!soundEnabled) {
+      setHeroUnmutedPlayback(false);
+    }
   }
   const [soundSnapshot, setSoundSnapshot] = useState(soundEnabled);
   if (soundEnabled !== soundSnapshot) {
@@ -622,10 +634,11 @@ export function HeroCarousel({
       if (key === activeKey) {
         if (!v.src) return;
         const wantSound = soundEnabled && key === activeKey;
-        void tryPlayHeroVideo(v, wantSound).then(() => {
-          if (wantSound && key === activeVideoSyncKeyRef.current) {
+        void tryPlayHeroVideo(v, wantSound, () => {
+          if (!wantSound || key !== activeVideoSyncKeyRef.current) return;
+          flushSync(() => {
             setHeroUnmutedPlayback(true);
-          }
+          });
         });
       } else {
         prepareHeroVideoEl(v);
