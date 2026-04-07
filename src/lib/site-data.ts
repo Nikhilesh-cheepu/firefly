@@ -1,5 +1,18 @@
-import type { HeroSlide } from "@prisma/client";
+import type { HeroSlide, MenuCategory, MenuItem } from "@prisma/client";
+import { DUMMY_MENU_CATEGORIES } from "@/data/dummy-menu";
 import { getPrisma } from "@/lib/db";
+
+export type MenuCategoryWithItems = MenuCategory & { items: MenuItem[] };
+
+/** When the DB has no menu rows, show placeholder Food + Beverage from `dummy-menu`. */
+export function resolveMenuCategoriesForHome(
+  dbCategories: MenuCategoryWithItems[],
+): { categories: MenuCategoryWithItems[]; isPlaceholderMenu: boolean } {
+  if (dbCategories.length > 0) {
+    return { categories: dbCategories, isPlaceholderMenu: false };
+  }
+  return { categories: DUMMY_MENU_CATEGORIES, isPlaceholderMenu: true };
+}
 
 export type SiteSettingsDTO = {
   heroVideoUrl: string | null;

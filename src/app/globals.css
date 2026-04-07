@@ -92,7 +92,28 @@ html {
   animation: ff-hero-chevron-right 2.1s ease-in-out infinite;
 }
 
+@keyframes ff-reviews-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.ff-reviews-track {
+  animation: ff-reviews-marquee 55s linear infinite;
+}
+
+.group\/reviews:hover .ff-reviews-track {
+  animation-play-state: paused;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .ff-reviews-track {
+    animation: none;
+  }
+
   .ff-hero-hint-pop,
   .ff-hero-chevron-left,
   .ff-hero-chevron-right {

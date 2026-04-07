@@ -36,7 +36,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       body,
       request,
       onBeforeGenerateToken: async (pathname) => {
-        if (!pathname.startsWith("hero/")) {
+        if (!pathname.startsWith("hero/") && !pathname.startsWith("gallery/")) {
           throw new Error("Invalid upload path");
         }
         return {

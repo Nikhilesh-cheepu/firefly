@@ -38,6 +38,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
               Hero slides
             </Link>
             <Link
+              href="/admin/gallery"
+              className="rounded-lg px-3 py-2 text-ff-mist transition hover:bg-ff-deep hover:text-white"
+            >
+              Gallery
+            </Link>
+            <Link
               href="/"
               className="rounded-lg px-3 py-2 text-ff-mist transition hover:bg-ff-deep hover:text-white"
             >

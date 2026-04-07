@@ -1,23 +1,16 @@
-import type { MenuCategory, MenuItem } from "@prisma/client";
 import { FadeInChild } from "@/components/motion/FadeInChild";
 import { SectionReveal } from "@/components/motion/SectionReveal";
-import { MenuItemsGrid } from "@/components/sections/MenuItemsGrid";
+import { MenuSheetButtonsRow } from "@/components/sections/MenuSheetButtonsRow";
 
-type CategoryWithItems = MenuCategory & { items: MenuItem[] };
-
-type Props = {
-  categories: CategoryWithItems[];
-};
-
-export function MenuSection({ categories }: Props) {
+export function MenuSection() {
   return (
     <SectionReveal
       id="menu"
       className="scroll-mt-6 bg-gradient-to-b from-ff-forest/40 via-ff-deep to-ff-void px-4 py-12 sm:px-6 md:py-16"
     >
       <div className="mx-auto max-w-6xl">
-        <header className="mb-8 md:mb-10">
-          <FadeInChild>
+        <header className="mb-8 flex flex-col gap-4 md:mb-10 md:flex-row md:items-end md:justify-between">
+          <FadeInChild className="min-w-0 flex-1">
             <p className="text-xs font-medium uppercase tracking-[0.3em] text-ff-mint/90">
               Eat &amp; drink
             </p>
@@ -28,26 +21,23 @@ export function MenuSection({ categories }: Props) {
               Menu
             </h2>
             <p className="mt-3 max-w-xl text-ff-mist/85">
-              Curated in Firefly admin — categories and plates tuned for the night.
+              Tap food, drinks, or happy hours — sample lists only until the final menu is live.
             </p>
+          </FadeInChild>
+          <FadeInChild delay={0.04} className="w-full md:max-w-xl md:flex-1">
+            <MenuSheetButtonsRow />
           </FadeInChild>
         </header>
 
-        {categories.length === 0 ? (
-          <FadeInChild delay={0.08}>
-            <p className="ff-card rounded-2xl border border-ff-glow/15 bg-ff-void/50 px-6 py-10 text-center text-sm leading-relaxed text-ff-mist/80 backdrop-blur-sm">
-              Menu cards come from Postgres (admin + Prisma). Set{" "}
-              <code className="text-ff-glow/90">DATABASE_URL</code> /{" "}
-              <code className="text-ff-glow/90">DATABASE_PUBLIC_URL</code> in{" "}
-              <code className="text-ff-glow/90">.env.local</code>, run{" "}
-              <code className="text-ff-glow/90">npm run db:push</code>, then add categories in admin. Events
-              &amp; offers above are separate — they use{" "}
-              <code className="text-ff-glow/90">BASSIK_BASE_URL</code>.
-            </p>
-          </FadeInChild>
-        ) : (
-          <MenuItemsGrid categories={categories} />
-        )}
+        <FadeInChild delay={0.06}>
+          <p
+            role="status"
+            className="rounded-2xl border border-amber-400/35 bg-amber-500/10 px-4 py-3 text-center text-sm leading-relaxed text-amber-100/95 backdrop-blur-sm"
+          >
+            <span className="font-semibold text-amber-200">Sample menu — not final.</span> We&apos;re
+            updating our menu; items and prices may change.
+          </p>
+        </FadeInChild>
       </div>
     </SectionReveal>
   );

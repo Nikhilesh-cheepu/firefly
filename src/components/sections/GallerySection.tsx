@@ -23,7 +23,7 @@ export function GallerySection({ images }: Props) {
               Gallery
             </h2>
             <p className="mt-3 max-w-xl text-ff-mist/85">
-              Lights, crowd, food — moments from the club (stored on your Blob when you wire uploads).
+              Tap any tile for a full view — curated from the admin gallery.
             </p>
           </FadeInChild>
         </header>
@@ -31,8 +31,8 @@ export function GallerySection({ images }: Props) {
         {images.length === 0 ? (
           <FadeInChild delay={0.08}>
             <p className="ff-card rounded-2xl border border-ff-glow/15 bg-ff-void/50 px-6 py-10 text-center text-ff-mist/80 backdrop-blur-sm">
-              No gallery images yet. Add <code className="text-ff-glow/90">GalleryImage</code> rows after
-              DB setup.
+              No gallery images yet. Open{" "}
+              <code className="text-ff-glow/90">/admin/gallery</code> (with DB + Blob) to upload photos.
             </p>
           </FadeInChild>
         ) : (
