@@ -24,7 +24,7 @@ export default async function FullGalleryPage() {
               </h1>
             </div>
             <Link
-              href="/#gallery"
+              href="/"
               className="rounded-lg border border-ff-glow/25 bg-ff-deep/70 px-3 py-2 text-sm text-ff-mist transition hover:border-ff-glow/45 hover:text-white"
             >
               Back

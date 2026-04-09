@@ -8,8 +8,15 @@ import { useEffect, useLayoutEffect } from "react";
  */
 function hardScrollTop() {
   if (typeof window === "undefined") return;
-  /* Clicking "Book table" used <Link href="#book"> → reload kept #book and jumped to footer. */
-  if (window.location.hash === "#book") {
+  const path = window.location.pathname || "";
+  const isHome = path === "/" || path === "";
+
+  /* Home: always drop section hashes (#gallery, #book, …) so reload opens at the hero, not mid-page. */
+  if (isHome) {
+    if (window.location.hash) {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search || ""}`);
+    }
+  } else if (window.location.hash === "#book") {
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search || ""}`);
   } else if (window.location.hash) {
     return;
@@ -22,8 +29,8 @@ function hardScrollTop() {
 }
 
 /**
- * Full reloads were restoring or anchoring scroll near the footer. Force top unless the URL
- * has a hash (same-page anchor). Staggered timeouts catch late layout (fonts, media, sticky UI).
+ * Full reloads were restoring or anchoring scroll mid-page. On `/`, strip any hash and force top.
+ * Other routes: keep hashes except legacy `#book` cleanup. Staggered timeouts catch late layout.
  */
 export function RestoreScrollOnLoad() {
   useLayoutEffect(() => {

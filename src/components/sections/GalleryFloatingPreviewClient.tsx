@@ -57,12 +57,7 @@ export function GalleryFloatingPreviewClient({ images }: Props) {
 
   return (
     <div className="mx-auto w-full max-w-xl px-0 sm:max-w-2xl" suppressHydrationWarning>
-      <Link
-        href="/gallery"
-        prefetch={false}
-        className="group block w-full p-0.5"
-        aria-label="Open full gallery"
-      >
+      <div className="relative mx-auto w-full p-0.5">
         <div className="relative mx-auto aspect-square w-full max-w-[min(100%,28rem)] sm:max-w-[min(100%,34rem)]">
           <div className="absolute left-1/2 top-1/2 h-[40%] w-[40%] -translate-x-1/2 -translate-y-1/2">
             <AnimatePresence mode="sync" initial={false}>
@@ -127,7 +122,16 @@ export function GalleryFloatingPreviewClient({ images }: Props) {
             );
           })}
         </div>
-      </Link>
+      </div>
+      <p className="mt-4 text-center">
+        <Link
+          href="/gallery"
+          prefetch={false}
+          className="inline-flex items-center justify-center rounded-xl border border-ff-glow/35 bg-ff-deep/60 px-4 py-2.5 text-sm font-semibold text-ff-glow transition hover:border-ff-glow/55 hover:bg-ff-forest/40 hover:text-white"
+        >
+          Open full gallery
+        </Link>
+      </p>
     </div>
   );
 }

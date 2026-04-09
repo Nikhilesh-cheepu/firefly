@@ -19,7 +19,6 @@ export const revalidate = 30;
 function GalleryLoadingFallback() {
   return (
     <SectionReveal
-      id="gallery"
       className="scroll-mt-6 bg-black px-1 py-5 sm:px-2 md:py-6"
       delay={0.04}
     >
@@ -34,7 +33,6 @@ function GalleryLoadingFallback() {
 function ReviewsLoadingFallback() {
   return (
     <SectionReveal
-      id="reviews"
       className="scroll-mt-6 overflow-x-hidden bg-gradient-to-b from-ff-void via-ff-deep/80 to-ff-deep px-0 py-12 sm:py-16"
       delay={0.05}
     >
