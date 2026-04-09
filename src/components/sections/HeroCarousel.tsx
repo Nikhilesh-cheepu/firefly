@@ -388,6 +388,8 @@ function HeroSlideMedia({
   imageFetchPriority?: "high" | "low" | "auto";
 }) {
   const audible = heroInView && audioUnlocked && instanceKey === activeInstanceKey;
+  /** Only the centered slide may use native autoplay; others would stack audio with `preload="auto"` on every slide. */
+  const isCenterSlide = instanceKey === activeInstanceKey;
   if (slide.type === "VIDEO") {
     return (
       <video
@@ -398,7 +400,7 @@ function HeroSlideMedia({
         className="pointer-events-none h-full w-full object-contain select-none"
         src={loadMedia ? slide.mediaUrl : undefined}
         poster={slide.posterUrl ?? undefined}
-        autoPlay={loadMedia}
+        autoPlay={loadMedia && isCenterSlide}
         muted={!audible}
         loop
         playsInline
