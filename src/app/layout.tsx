@@ -34,10 +34,14 @@ const manrope = Manrope({
   adjustFontFallback: true,
 });
 
+/** Brand behind browser chrome — matches `bg-ff-hero-void` (not OLED black). */
+const BRAND_CHROME = "#040a12";
+
 export const metadata: Metadata = {
   title: "Firefly — Telugu club",
   description: "Food, daily DJs, and parties. Tollywood nights under the glow.",
-  /** Lets the page paint behind the status bar / island when added to Home Screen. */
+  manifest: "/manifest.webmanifest",
+  /** Lets the page paint behind the status bar when added to Home Screen (iOS). */
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -45,17 +49,13 @@ export const metadata: Metadata = {
   },
 };
 
-/** System UI tint — matches `bg-ff-hero-void` (blue-green, not pure black). */
-const BRAND_CHROME = "#040a12";
-
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: BRAND_CHROME },
-    { media: "(prefers-color-scheme: dark)", color: BRAND_CHROME },
-  ],
+  colorScheme: "dark",
+  /** Single value — better support than media-query entries on mobile Safari / Chrome iOS. */
+  themeColor: BRAND_CHROME,
 };
 
 export default function RootLayout({
