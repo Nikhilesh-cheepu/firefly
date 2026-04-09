@@ -44,6 +44,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
               Gallery
             </Link>
             <Link
+              href="/admin/bookings"
+              className="rounded-lg px-3 py-2 text-ff-mist transition hover:bg-ff-deep hover:text-white"
+            >
+              Bookings
+            </Link>
+            <Link
               href="/"
               className="rounded-lg px-3 py-2 text-ff-mist transition hover:bg-ff-deep hover:text-white"
             >

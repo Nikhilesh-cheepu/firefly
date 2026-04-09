@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
-import { Bebas_Neue, DM_Sans, Geist_Mono } from "next/font/google";
+import { Bebas_Neue, DM_Sans, Geist_Mono, Manrope } from "next/font/google";
 import Script from "next/script";
 import { RestoreScrollOnLoad } from "@/components/RestoreScrollOnLoad";
 import "./globals.css";
@@ -27,6 +27,13 @@ const geistMono = Geist_Mono({
   adjustFontFallback: true,
 });
 
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  display: "swap",
+  adjustFontFallback: true,
+});
+
 export const metadata: Metadata = {
   title: "Firefly — Telugu club",
   description: "Food, daily DJs, and parties. Tollywood nights under the glow.",
@@ -47,7 +54,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${display.variable} ${dmSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${display.variable} ${dmSans.variable} ${geistMono.variable} ${manrope.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col [overflow-anchor:none] bg-ff-hero-void text-zinc-50">
         <Script id="firefly-scroll-bootstrap" strategy="beforeInteractive">

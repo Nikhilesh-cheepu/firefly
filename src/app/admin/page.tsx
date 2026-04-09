@@ -37,6 +37,17 @@ export default function AdminHomePage() {
             </p>
           </Link>
         </li>
+        <li>
+          <Link
+            href="/admin/bookings"
+            className="ff-card ff-card-interactive block rounded-2xl border border-ff-glow/15 bg-ff-deep/50 p-6 transition hover:border-ff-glow/30"
+          >
+            <h2 className="font-semibold text-white">Table bookings</h2>
+            <p className="mt-1 text-sm text-ff-mist/80">
+              Who booked, when, and total reservations from the /book flow.
+            </p>
+          </Link>
+        </li>
       </ul>
     </div>
   );

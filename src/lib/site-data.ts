@@ -29,7 +29,7 @@ function envFallback(): SiteSettingsDTO {
   return {
     heroVideoUrl: process.env.NEXT_PUBLIC_HERO_VIDEO_URL ?? null,
     heroPosterUrl: process.env.NEXT_PUBLIC_HERO_POSTER_URL ?? null,
-    bookTableUrl: process.env.NEXT_PUBLIC_BOOK_TABLE_URL ?? "#book",
+    bookTableUrl: process.env.NEXT_PUBLIC_BOOK_TABLE_URL ?? "/book",
     contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? null,
     phone: process.env.NEXT_PUBLIC_PHONE ?? null,
     whatsapp: process.env.NEXT_PUBLIC_WHATSAPP ?? null,

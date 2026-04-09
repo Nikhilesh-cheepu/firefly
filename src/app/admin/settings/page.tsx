@@ -58,8 +58,8 @@ export default async function AdminSettingsPage() {
           <Field
             label="Book table link"
             name="bookTableUrl"
-            defaultValue={row?.bookTableUrl ?? "#book"}
-            placeholder="#book or https://…"
+            defaultValue={row?.bookTableUrl ?? "/book"}
+            placeholder="/book or https://…"
           />
           <Field
             label="Phone (tap to call)"

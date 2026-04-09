@@ -63,3 +63,12 @@ model GalleryImage {
   alt       String?
   sortOrder Int    @default(0)
 }
+
+model TableBooking {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  guestName String
+  phone     String
+  date      DateTime @db.Date
+  slot      String
+}

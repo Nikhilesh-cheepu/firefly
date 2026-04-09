@@ -137,6 +137,9 @@ body {
     var(--background);
   color: var(--foreground);
   font-family: var(--font-dm), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 /* Card depth + gentle lift on hover (disabled when user prefers reduced motion) */

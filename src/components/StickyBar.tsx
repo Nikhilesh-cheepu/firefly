@@ -177,35 +177,22 @@ export function StickyBar({ settings }: Props) {
   const bookNode = (() => {
     if (isExternalUrl(bookRaw)) {
       return (
-        <a
-          href={bookRaw}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={bookClassName}
-        >
+        <a href={bookRaw} target="_blank" rel="noopener noreferrer" className={bookClassName}>
           Book table
         </a>
       );
     }
     if (bookRaw === "#book" || bookRaw === "" || bookRaw === "/#book") {
       return (
-        <button
-          type="button"
-          className={bookClassName}
-          onClick={() => scrollToDomId("book", !reduce)}
-        >
+        <Link href="/book" className={bookClassName}>
           Book table
-        </button>
+        </Link>
       );
     }
     if (bookRaw.startsWith("#") && bookRaw.length > 1) {
       const id = bookRaw.slice(1);
       return (
-        <button
-          type="button"
-          className={bookClassName}
-          onClick={() => scrollToDomId(id, !reduce)}
-        >
+        <button type="button" className={bookClassName} onClick={() => scrollToDomId(id, !reduce)}>
           Book table
         </button>
       );
