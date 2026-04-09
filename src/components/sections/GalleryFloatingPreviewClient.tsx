@@ -22,7 +22,7 @@ export function GalleryFloatingPreviewClient({ images }: Props) {
     if (images.length <= 1) return;
     const timer = window.setInterval(() => {
       setCenterIndex((prev) => (prev + 1) % images.length);
-    }, 2200);
+    }, 1300);
     return () => window.clearInterval(timer);
   }, [images.length]);
 
@@ -65,26 +65,16 @@ export function GalleryFloatingPreviewClient({ images }: Props) {
       >
         <div className="relative mx-auto aspect-square w-full max-w-[min(100%,28rem)] sm:max-w-[min(100%,34rem)]">
           <div className="absolute left-1/2 top-1/2 h-[40%] w-[40%] -translate-x-1/2 -translate-y-1/2">
-            <AnimatePresence mode="wait" initial={false}>
+            <AnimatePresence mode="sync" initial={false}>
               <motion.div
                 key={center.id}
-                className="absolute inset-0 overflow-hidden rounded-[1.7rem] border border-ff-glow/35 bg-ff-void shadow-[0_12px_40px_rgba(0,0,0,0.55)]"
+                className="absolute inset-0 overflow-hidden rounded-[1.7rem] border-2 border-ff-glow/45 bg-ff-void shadow-[0_12px_40px_rgba(0,0,0,0.55),inset_0_0_0_1px_rgba(200,255,120,0.14),inset_0_0_28px_rgba(0,0,0,0.18)] ring-1 ring-ff-mint/25"
                 initial={
-                  reduce
-                    ? { opacity: 0 }
-                    : { opacity: 0, filter: "blur(14px)", scale: 1.02 }
+                  reduce ? { opacity: 0 } : { opacity: 0, scale: 0.985 }
                 }
-                animate={
-                  reduce
-                    ? { opacity: 1 }
-                    : { opacity: 1, filter: "blur(0px)", scale: 1 }
-                }
-                exit={
-                  reduce
-                    ? { opacity: 0 }
-                    : { opacity: 0, filter: "blur(12px)", scale: 0.98 }
-                }
-                transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+                animate={reduce ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+                exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.99 }}
+                transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img

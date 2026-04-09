@@ -37,13 +37,25 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: "Firefly — Telugu club",
   description: "Food, daily DJs, and parties. Tollywood nights under the glow.",
+  /** Lets the page paint behind the status bar / island when added to Home Screen. */
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Firefly",
+  },
 };
+
+/** System UI tint — matches `bg-ff-hero-void` (blue-green, not pure black). */
+const BRAND_CHROME = "#040a12";
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#040a12",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: BRAND_CHROME },
+    { media: "(prefers-color-scheme: dark)", color: BRAND_CHROME },
+  ],
 };
 
 export default function RootLayout({
@@ -54,7 +66,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${display.variable} ${dmSans.variable} ${geistMono.variable} ${manrope.variable} h-full antialiased`}
+      className={`${display.variable} ${dmSans.variable} ${geistMono.variable} ${manrope.variable} h-full bg-ff-hero-void antialiased`}
     >
       <body className="min-h-full flex flex-col [overflow-anchor:none] bg-ff-hero-void text-zinc-50">
         <Script id="firefly-scroll-bootstrap" strategy="beforeInteractive">

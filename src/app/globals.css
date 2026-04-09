@@ -46,6 +46,8 @@
 html {
   scroll-behavior: auto;
   overflow-anchor: none;
+  /* Matches theme-color + body: notch / island / overscroll use hero void, not flat black */
+  background-color: var(--color-ff-hero-void);
 }
 
 /* Hero: CSS-only motion avoids Framer blur/filter on text (PageSpeed LCP + compositing). */

@@ -12,7 +12,7 @@ import {
   useState,
 } from "react";
 import { flushSync } from "react-dom";
-import { useHeroVideoBeat } from "@/hooks/useHeroVideoBeat";
+import { useHeroAmbientPulse } from "@/hooks/useHeroAmbientPulse";
 
 export type HeroCarouselProps = {
   slides: HeroSlide[];
@@ -268,14 +268,17 @@ function HeroMediaCard({
   const b = reduceMotion ? 0 : Math.min(1, Math.max(0, beat));
   return (
     <div
-      className="overflow-hidden rounded-2xl border-2 bg-black/20 ring-1 ring-ff-mint/15 transition-[border-color,box-shadow] duration-75 ease-out"
+      className="overflow-hidden rounded-2xl bg-black/20 ring-1 transition-[border-color,box-shadow,border-width] duration-[65ms] ease-out ring-ff-mint/20"
       style={{
-        borderColor: `rgba(200, 255, 120, ${0.4 + b * 0.48})`,
+        borderStyle: "solid",
+        borderWidth: `${2 + b * 3}px`,
+        borderColor: `rgba(200, 255, 120, ${0.45 + b * 0.52})`,
         boxShadow: [
-          `0 0 0 1px rgba(124, 245, 198, ${0.12 + b * 0.28})`,
+          `0 0 0 ${1 + b * 2}px rgba(124, 245, 198, ${0.16 + b * 0.42})`,
           `0 12px 40px rgba(0,0,0,0.55)`,
-          `0 0 ${14 + b * 48}px rgba(200,255,120,${0.18 + b * 0.55})`,
-          `inset 0 0 ${28 + b * 40}px rgba(200,255,120,${0.04 + b * 0.12})`,
+          `0 0 ${6 + b * 92}px rgba(200,255,120,${0.28 + b * 0.7})`,
+          `0 0 ${28 + b * 64}px rgba(200,255,120,${0.1 + b * 0.42})`,
+          `inset 0 0 ${16 + b * 64}px rgba(200,255,120,${0.08 + b * 0.26})`,
         ].join(", "),
       }}
     >
@@ -307,8 +310,8 @@ function HeroAmbientBackdrop({
     : { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const };
 
   const b = reduceMotion ? 0 : Math.min(1, Math.max(0, beat));
-  const washScale = 1 + b * 0.045;
-  const tintOpacity = 0.85 + b * 0.38;
+  const washScale = 1 + b * 0.092;
+  const tintOpacity = Math.min(1, 0.72 + b * 0.34);
 
   return (
     <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden>
@@ -322,7 +325,7 @@ function HeroAmbientBackdrop({
           transition={transition}
         >
           <div
-            className="absolute inset-[-32%] flex items-center justify-center transition-transform duration-75 ease-out will-change-transform"
+            className="absolute inset-[-32%] flex items-center justify-center transition-transform duration-[65ms] ease-out will-change-transform"
             style={{ transform: `scale(${washScale})` }}
           >
             {slide.type === "IMAGE" || usePosterStill ? (
@@ -345,13 +348,17 @@ function HeroAmbientBackdrop({
       </AnimatePresence>
       {/* Brand-tinted lift on very dark frames */}
       <div
-        className="absolute inset-0 bg-gradient-to-br from-ff-glow/[0.09] via-ff-mint/[0.05] to-ff-glow/[0.07] mix-blend-soft-light transition-opacity duration-75 ease-out"
+        className="absolute inset-0 bg-gradient-to-br from-ff-glow/[0.09] via-ff-mint/[0.05] to-ff-glow/[0.07] mix-blend-soft-light transition-opacity duration-[65ms] ease-out"
         style={{ opacity: tintOpacity }}
       />
       <div className="absolute inset-0 bg-gradient-to-b from-[#03080f]/36 via-[#03080f]/16 to-[#03080f]/40" />
       <div
-        className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_38%,rgba(200,255,120,0.14)_0%,transparent_42%)] mix-blend-screen transition-opacity duration-75"
-        style={{ opacity: 0.28 + b * 0.62 }}
+        className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_36%,rgba(200,255,120,0.22)_0%,rgba(200,255,120,0.08)_28%,transparent_52%)] mix-blend-screen transition-opacity duration-[65ms]"
+        style={{ opacity: Math.min(1, 0.2 + b * 0.82) }}
+      />
+      <div
+        className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_72%,rgba(124,245,198,0.12)_0%,transparent_45%)] mix-blend-plus-lighter transition-opacity duration-[65ms]"
+        style={{ opacity: b * 0.55 }}
       />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_42%,transparent_0%,rgba(3,8,15,0.22)_65%,rgba(3,8,15,0.48)_100%)]" />
     </div>
@@ -654,12 +661,7 @@ export function HeroCarousel({
     soundEnabled &&
     heroUnmutedPlayback;
 
-  const getBeatVideo = useCallback(() => {
-    if (!beatEligible) return null;
-    return videoRefs.current.get(activeVideoSyncKey) ?? null;
-  }, [beatEligible, activeVideoSyncKey]);
-
-  const beatEnergy = useHeroVideoBeat(getBeatVideo, beatEligible, !!reduceMotion);
+  const beatEnergy = useHeroAmbientPulse(beatEligible, !!reduceMotion);
 
   const heroLoadPlan = useMemo(() => {
     if (mode !== "simple" && mode !== "infinite") return null;
