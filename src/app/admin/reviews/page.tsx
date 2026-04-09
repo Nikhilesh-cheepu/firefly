@@ -34,8 +34,9 @@ export default async function AdminReviewsPage() {
     <div>
       <h1 className="font-[family-name:var(--font-display)] text-3xl text-ff-glow">Reviews</h1>
       <p className="mt-2 text-sm text-ff-mist/75">
-        New submissions appear below. Approve to show on the home page, or dismiss if it shouldn&apos;t
-        go live.
+        New submissions appear below. Approve to add them to the home page marquee (alongside the
+        always-on showcase reviews). Dismiss only hides a submission from the site — nothing is
+        deleted from the database.
       </p>
 
       <p className="mt-10 text-xs font-semibold uppercase tracking-[0.2em] text-ff-mist/55">

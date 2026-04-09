@@ -41,6 +41,10 @@ export const metadata: Metadata = {
   title: "Firefly — Telugu club",
   description: "Food, daily DJs, and parties. Tollywood nights under the glow.",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/icon.svg", type: "image/svg+xml" }],
+  },
   /** Lets the page paint behind the status bar when added to Home Screen (iOS). */
   appleWebApp: {
     capable: true,

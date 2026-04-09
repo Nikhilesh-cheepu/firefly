@@ -11,7 +11,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { flushSync } from "react-dom";
 import { useHeroAmbientPulse } from "@/hooks/useHeroAmbientPulse";
 
 export type HeroCarouselProps = {
@@ -33,6 +32,7 @@ type NormalizedSlide = {
 type LoopSlide = NormalizedSlide & { instanceKey: string };
 
 const HINT_KEY = "firefly-hero-swipe-hint";
+const HERO_SOUND_STORAGE_KEY = "firefly-hero-sound-on";
 
 /** Slide strip width fraction (used only for non–snap-center fallbacks). */
 const SLIDE_VIEWPORT_FRAC = 0.86;
@@ -124,21 +124,18 @@ function buildHeroLoadPlan(
 /** iOS/Android: set muted + playsInline in JS before play(); a second <video> with the same src blocks foreground playback. */
 function prepareHeroVideoEl(v: HTMLVideoElement) {
   v.playsInline = true;
+  v.loop = true;
   v.setAttribute("playsinline", "");
   v.setAttribute("webkit-playsinline", "");
 }
 
 /**
  * Unmuted play() usually fails on iOS/Android without a user gesture (slide swipe does not count).
- * Start muted, await play(), then unmute — same global sound applies to every slide after the first unlock.
- * `onBeforeUnmute` runs after play() succeeds so the parent can flush React `muted={false}` before we touch the DOM.
+ * Start muted, await play(), then unmute — one global sound toggle applies to whichever video is centered.
  */
-async function tryPlayHeroVideo(
-  v: HTMLVideoElement,
-  wantSound: boolean,
-  onBeforeUnmute?: () => void,
-) {
+async function tryPlayHeroVideo(v: HTMLVideoElement, wantSound: boolean) {
   prepareHeroVideoEl(v);
+  v.loop = true;
   v.defaultMuted = !wantSound;
   v.volume = 1;
   const attempt = async () => {
@@ -153,7 +150,6 @@ async function tryPlayHeroVideo(
     } catch {
       await v.play().catch(() => {});
     }
-    onBeforeUnmute?.();
     try {
       v.muted = false;
     } catch {
@@ -214,14 +210,12 @@ function IconVolumeOff({ className }: { className?: string }) {
 function HeroSoundToggle({
   soundEnabled,
   setSoundEnabled,
-  setHeroUnmutedPlayback,
 }: {
   soundEnabled: boolean;
   setSoundEnabled: (v: boolean) => void;
-  setHeroUnmutedPlayback: (v: boolean) => void;
 }) {
   return (
-    <div className="pointer-events-none absolute bottom-[calc(7.25rem+env(safe-area-inset-bottom))] right-3 z-30 md:right-5">
+    <div className="pointer-events-none absolute bottom-[calc(10rem+env(safe-area-inset-bottom))] right-3 z-30 sm:bottom-[calc(10.5rem+env(safe-area-inset-bottom))] md:right-5">
       <button
         type="button"
         aria-label={soundEnabled ? "Mute hero videos" : "Unmute hero videos"}
@@ -229,8 +223,13 @@ function HeroSoundToggle({
         onClick={() => {
           const next = !soundEnabled;
           setSoundEnabled(next);
-          if (next) {
-            setHeroUnmutedPlayback(true);
+          try {
+            if (typeof window !== "undefined") {
+              if (next) window.sessionStorage.setItem(HERO_SOUND_STORAGE_KEY, "1");
+              else window.sessionStorage.removeItem(HERO_SOUND_STORAGE_KEY);
+            }
+          } catch {
+            /* private mode */
           }
         }}
         className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-ff-glow/40 bg-[#03080f]/85 text-ff-glow shadow-[0_0_18px_rgba(200,255,120,0.16)] backdrop-blur-md transition hover:border-ff-mint/50 hover:text-ff-mint"
@@ -370,7 +369,6 @@ function HeroBackdrop({
   instanceKey,
   activeInstanceKey,
   soundEnabled,
-  heroUnmutedPlayback,
   videoRefs,
   beat,
   reduceMotion,
@@ -379,13 +377,11 @@ function HeroBackdrop({
   instanceKey: string;
   activeInstanceKey: string;
   soundEnabled: boolean;
-  heroUnmutedPlayback: boolean;
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
   beat: number;
   reduceMotion: boolean;
 }) {
-  const audible =
-    soundEnabled && instanceKey === activeInstanceKey && heroUnmutedPlayback;
+  const audible = soundEnabled && instanceKey === activeInstanceKey;
   if (slide.type === "VIDEO") {
     return (
       <HeroMediaCard beat={beat} reduceMotion={reduceMotion}>
@@ -428,7 +424,6 @@ function HeroSlideMedia({
   instanceKey,
   activeInstanceKey,
   soundEnabled,
-  heroUnmutedPlayback,
   videoRefs,
   loadMedia,
   videoPreload,
@@ -438,14 +433,12 @@ function HeroSlideMedia({
   instanceKey: string;
   activeInstanceKey: string;
   soundEnabled: boolean;
-  heroUnmutedPlayback: boolean;
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
   loadMedia: boolean;
   videoPreload: "none" | "metadata" | "auto";
   imageFetchPriority?: "high" | "low" | "auto";
 }) {
-  const audible =
-    soundEnabled && instanceKey === activeInstanceKey && heroUnmutedPlayback;
+  const audible = soundEnabled && instanceKey === activeInstanceKey;
   if (slide.type === "VIDEO") {
     return (
       <video
@@ -481,7 +474,6 @@ function HeroSlideColumn({
   videoRefs,
   activeInstanceKey,
   soundEnabled,
-  heroUnmutedPlayback,
   isActive,
   reduceMotion,
   loadMedia,
@@ -493,7 +485,6 @@ function HeroSlideColumn({
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
   activeInstanceKey: string;
   soundEnabled: boolean;
-  heroUnmutedPlayback: boolean;
   isActive: boolean;
   reduceMotion: boolean;
   loadMedia: boolean;
@@ -523,7 +514,6 @@ function HeroSlideColumn({
               instanceKey={loopItem.instanceKey}
               activeInstanceKey={activeInstanceKey}
               soundEnabled={soundEnabled}
-              heroUnmutedPlayback={heroUnmutedPlayback}
               videoRefs={videoRefs}
               loadMedia={loadMedia}
               videoPreload={videoPreload}
@@ -552,8 +542,6 @@ export function HeroCarousel({
   const [activeInstanceKey, setActiveInstanceKey] = useState("");
   const [hintVisible, setHintVisible] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(false);
-  /** Keeps `muted` in JSX false only after muted-first play succeeds (or user unmutes) so React does not force unmuted before play on iOS. */
-  const [heroUnmutedPlayback, setHeroUnmutedPlayback] = useState(false);
   const videoRefs = useRef<Map<string, HTMLVideoElement | null>>(new Map());
   const activeVideoSyncKeyRef = useRef("");
   const prevActiveVideoKeyRef = useRef("");
@@ -599,6 +587,11 @@ export function HeroCarousel({
     return [];
   }, [slides, fallbackVideo, fallbackPoster]);
 
+  const hasAnyVideo = useMemo(
+    () => normalized.some((s) => s.type === "VIDEO"),
+    [normalized],
+  );
+
   const loopSlides = useMemo<LoopSlide[] | null>(() => {
     if (normalized.length < 2 || reduceMotion) return null;
     const n = normalized.length;
@@ -636,18 +629,17 @@ export function HeroCarousel({
   const [syncKeySnapshot, setSyncKeySnapshot] = useState(activeVideoSyncKey);
   if (activeVideoSyncKey !== syncKeySnapshot) {
     setSyncKeySnapshot(activeVideoSyncKey);
-    // After the user unmutes once (soundEnabled), do NOT clear heroUnmutedPlayback on swipe.
-    // If we did, React keeps muted={true} on the new slide until tryPlayHeroVideo() finishes.
-    // On iOS that window can overwrite imperative v.muted = false, so audio stays off until another tap.
-    if (!soundEnabled) {
-      setHeroUnmutedPlayback(false);
+  }
+
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined" && window.sessionStorage.getItem(HERO_SOUND_STORAGE_KEY) === "1") {
+        setSoundEnabled(true);
+      }
+    } catch {
+      /* private mode */
     }
-  }
-  const [soundSnapshot, setSoundSnapshot] = useState(soundEnabled);
-  if (soundEnabled !== soundSnapshot) {
-    setSoundSnapshot(soundEnabled);
-    if (!soundEnabled) setHeroUnmutedPlayback(false);
-  }
+  }, []);
 
   const activeSlideForBeat = useMemo(() => {
     if (mode === "empty") return null;
@@ -656,10 +648,7 @@ export function HeroCarousel({
   }, [mode, normalized, activeLogical]);
 
   const beatEligible =
-    mode !== "empty" &&
-    activeSlideForBeat?.type === "VIDEO" &&
-    soundEnabled &&
-    heroUnmutedPlayback;
+    mode !== "empty" && activeSlideForBeat?.type === "VIDEO" && soundEnabled;
 
   const beatEnergy = useHeroAmbientPulse(beatEligible, !!reduceMotion);
 
@@ -729,12 +718,7 @@ export function HeroCarousel({
           }
         }
         const wantSound = soundEnabled && key === activeKey;
-        void tryPlayHeroVideo(v, wantSound, () => {
-          if (!wantSound || key !== activeVideoSyncKeyRef.current) return;
-          flushSync(() => {
-            setHeroUnmutedPlayback(true);
-          });
-        });
+        void tryPlayHeroVideo(v, wantSound);
       } else {
         prepareHeroVideoEl(v);
         v.muted = true;
@@ -950,24 +934,18 @@ export function HeroCarousel({
             instanceKey={ik}
             activeInstanceKey={ik}
             soundEnabled={soundEnabled}
-            heroUnmutedPlayback={heroUnmutedPlayback}
             videoRefs={videoRefs}
             beat={beatEnergy}
             reduceMotion={!!reduceMotion}
           />
         </div>
         {s.type === "VIDEO" && (
-          <HeroSoundToggle
-            soundEnabled={soundEnabled}
-            setSoundEnabled={setSoundEnabled}
-            setHeroUnmutedPlayback={setHeroUnmutedPlayback}
-          />
+          <HeroSoundToggle soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled} />
         )}
       </section>
     );
   }
 
-  const currentVideoSlide = normalized[activeLogical];
   const soundTargetInstanceKey =
     activeInstanceKey ||
     (mode === "infinite" && loopSlides
@@ -1001,7 +979,6 @@ export function HeroCarousel({
                   videoRefs={videoRefs}
                   activeInstanceKey={soundTargetInstanceKey}
                   soundEnabled={soundEnabled}
-                  heroUnmutedPlayback={heroUnmutedPlayback}
                   isActive={item.key === activeSlideKey}
                   reduceMotion={!!reduceMotion}
                   loadMedia={loadMedia}
@@ -1022,7 +999,6 @@ export function HeroCarousel({
                   videoRefs={videoRefs}
                   activeInstanceKey={soundTargetInstanceKey}
                   soundEnabled={soundEnabled}
-                  heroUnmutedPlayback={heroUnmutedPlayback}
                   isActive={s.key === activeSlideKey}
                   reduceMotion={!!reduceMotion}
                   loadMedia={loadMedia}
@@ -1034,12 +1010,8 @@ export function HeroCarousel({
             })}
       </div>
 
-      {currentVideoSlide?.type === "VIDEO" && (
-        <HeroSoundToggle
-          soundEnabled={soundEnabled}
-          setSoundEnabled={setSoundEnabled}
-          setHeroUnmutedPlayback={setHeroUnmutedPlayback}
-        />
+      {hasAnyVideo && (
+        <HeroSoundToggle soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled} />
       )}
 
       <div

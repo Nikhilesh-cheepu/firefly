@@ -4,12 +4,15 @@ import { ReviewsMarqueeClient } from "@/components/sections/ReviewsMarqueeClient
 import { WriteReviewSheet } from "@/components/sections/WriteReviewSheet";
 import { DUMMY_REVIEWS } from "@/data/dummy-reviews";
 import { getPrisma } from "@/lib/db";
-import { getApprovedGuestReviews } from "@/lib/guest-reviews";
+import { getApprovedGuestReviews, mergeDisplayReviews } from "@/lib/guest-reviews";
 
 export async function ReviewsSection() {
   const prisma = getPrisma();
   const canSubmitReview = Boolean(prisma);
-  const reviews = prisma ? await getApprovedGuestReviews() : DUMMY_REVIEWS;
+  const dbReviews = prisma ? await getApprovedGuestReviews() : [];
+  const reviews = prisma
+    ? mergeDisplayReviews(DUMMY_REVIEWS, dbReviews)
+    : DUMMY_REVIEWS;
 
   return (
     <SectionReveal
