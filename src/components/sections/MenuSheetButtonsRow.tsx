@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useMenuSheets } from "@/components/menu/MenuSheetsProvider";
 
 export function MenuSheetButtonsRow() {
-  const { openFoodMenu, openBeverageMenu, openHappyHours } = useMenuSheets();
+  const { openFoodMenu, openBarMenu, openHappyHours } = useMenuSheets();
   const reduce = useReducedMotion();
 
   const btn =
@@ -23,12 +23,12 @@ export function MenuSheetButtonsRow() {
       </motion.button>
       <motion.button
         type="button"
-        onClick={openBeverageMenu}
+        onClick={openBarMenu}
         className={btn}
         whileHover={reduce ? undefined : { y: -1 }}
         whileTap={reduce ? undefined : { scale: 0.98 }}
       >
-        Beverages
+        Bar menu
       </motion.button>
       <motion.button
         type="button"

@@ -138,6 +138,8 @@ async function tryPlayHeroVideo(
   onBeforeUnmute?: () => void,
 ) {
   prepareHeroVideoEl(v);
+  v.defaultMuted = !wantSound;
+  v.volume = 1;
   const attempt = async () => {
     if (!wantSound) {
       v.muted = true;
@@ -156,6 +158,7 @@ async function tryPlayHeroVideo(
     } catch {
       /* ignore */
     }
+    // Mobile browsers can flip muted back during async media state changes.
     requestAnimationFrame(() => {
       try {
         v.muted = false;
@@ -163,13 +166,24 @@ async function tryPlayHeroVideo(
         /* ignore */
       }
     });
+    setTimeout(() => {
+      try {
+        v.muted = false;
+      } catch {
+        /* ignore */
+      }
+    }, 60);
+    await v.play().catch(() => {});
   };
   if (v.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
     await attempt();
   } else {
-    await new Promise<void>((resolve) => {
-      v.addEventListener("canplay", () => resolve(), { once: true });
-    });
+    await Promise.race([
+      new Promise<void>((resolve) => {
+        v.addEventListener("canplay", () => resolve(), { once: true });
+      }),
+      new Promise<void>((resolve) => setTimeout(resolve, 1200)),
+    ]);
     await attempt();
   }
 }
@@ -490,6 +504,7 @@ export function HeroCarousel({
   const [heroUnmutedPlayback, setHeroUnmutedPlayback] = useState(false);
   const videoRefs = useRef<Map<string, HTMLVideoElement | null>>(new Map());
   const activeVideoSyncKeyRef = useRef("");
+  const prevActiveVideoKeyRef = useRef("");
 
   const normalized = useMemo<NormalizedSlide[]>(() => {
     if (slides.length > 0) {
@@ -628,11 +643,25 @@ export function HeroCarousel({
 
   const syncHeroVideos = useCallback(() => {
     const activeKey = activeVideoSyncKey;
+    const activeChanged = prevActiveVideoKeyRef.current !== activeKey;
+    prevActiveVideoKeyRef.current = activeKey;
     activeVideoSyncKeyRef.current = activeKey;
     videoRefs.current.forEach((v, key) => {
       if (!v || v.tagName !== "VIDEO") return;
       if (key === activeKey) {
         if (!v.src) return;
+        if (activeChanged) {
+          try {
+            v.pause();
+          } catch {
+            /* ignore */
+          }
+          try {
+            v.currentTime = 0;
+          } catch {
+            /* ignore */
+          }
+        }
         const wantSound = soundEnabled && key === activeKey;
         void tryPlayHeroVideo(v, wantSound, () => {
           if (!wantSound || key !== activeVideoSyncKeyRef.current) return;

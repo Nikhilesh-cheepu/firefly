@@ -23,6 +23,9 @@ export function MenuSection() {
           </FadeInChild>
           <FadeInChild delay={0.04} className="w-full md:max-w-xl md:flex-1">
             <MenuSheetButtonsRow />
+            <p className="mt-2 text-sm text-amber-200/90">
+              Due to ongoing global issues, the food menu is limited.
+            </p>
           </FadeInChild>
         </header>
 
