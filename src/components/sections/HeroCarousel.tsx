@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 import { flushSync } from "react-dom";
+import { useHeroVideoBeat } from "@/hooks/useHeroVideoBeat";
 
 export type HeroCarouselProps = {
   slides: HeroSlide[];
@@ -254,9 +255,30 @@ function PortraitHeroFrame({ children }: { children: ReactNode }) {
   );
 }
 
-function HeroMediaCard({ children }: { children: ReactNode }) {
+function HeroMediaCard({
+  children,
+  beat = 0,
+  reduceMotion,
+}: {
+  children: ReactNode;
+  /** 0–1 from audio analysis; border / glow pulse */
+  beat?: number;
+  reduceMotion?: boolean;
+}) {
+  const b = reduceMotion ? 0 : Math.min(1, Math.max(0, beat));
   return (
-    <div className="overflow-hidden rounded-2xl border-2 border-ff-glow/50 bg-black/20 shadow-[0_0_0_1px_rgba(124,245,198,0.12),0_12px_40px_rgba(0,0,0,0.55)] ring-1 ring-ff-mint/15">
+    <div
+      className="overflow-hidden rounded-2xl border-2 bg-black/20 ring-1 ring-ff-mint/15 transition-[border-color,box-shadow] duration-75 ease-out"
+      style={{
+        borderColor: `rgba(200, 255, 120, ${0.4 + b * 0.48})`,
+        boxShadow: [
+          `0 0 0 1px rgba(124, 245, 198, ${0.12 + b * 0.28})`,
+          `0 12px 40px rgba(0,0,0,0.55)`,
+          `0 0 ${14 + b * 48}px rgba(200,255,120,${0.18 + b * 0.55})`,
+          `inset 0 0 ${28 + b * 40}px rgba(200,255,120,${0.04 + b * 0.12})`,
+        ].join(", "),
+      }}
+    >
       {children}
     </div>
   );
@@ -270,9 +292,12 @@ const AMBIENT_MEDIA =
 function HeroAmbientBackdrop({
   slide,
   reduceMotion,
+  beat = 0,
 }: {
   slide: NormalizedSlide;
   reduceMotion: boolean;
+  /** 0–1 audio-reactive wash (video + unmuted only) */
+  beat?: number;
 }) {
   const usePosterStill =
     slide.type === "VIDEO" && slide.posterUrl != null && slide.posterUrl !== "";
@@ -280,6 +305,10 @@ function HeroAmbientBackdrop({
   const transition = reduceMotion
     ? { duration: 0 }
     : { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const };
+
+  const b = reduceMotion ? 0 : Math.min(1, Math.max(0, beat));
+  const washScale = 1 + b * 0.045;
+  const tintOpacity = 0.85 + b * 0.38;
 
   return (
     <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden>
@@ -292,7 +321,10 @@ function HeroAmbientBackdrop({
           exit={reduceMotion ? { opacity: 1 } : { opacity: 0 }}
           transition={transition}
         >
-          <div className="absolute inset-[-32%] flex items-center justify-center">
+          <div
+            className="absolute inset-[-32%] flex items-center justify-center transition-transform duration-75 ease-out will-change-transform"
+            style={{ transform: `scale(${washScale})` }}
+          >
             {slide.type === "IMAGE" || usePosterStill ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -312,8 +344,15 @@ function HeroAmbientBackdrop({
         </motion.div>
       </AnimatePresence>
       {/* Brand-tinted lift on very dark frames */}
-      <div className="absolute inset-0 bg-gradient-to-br from-ff-glow/[0.09] via-ff-mint/[0.05] to-ff-glow/[0.07] mix-blend-soft-light" />
+      <div
+        className="absolute inset-0 bg-gradient-to-br from-ff-glow/[0.09] via-ff-mint/[0.05] to-ff-glow/[0.07] mix-blend-soft-light transition-opacity duration-75 ease-out"
+        style={{ opacity: tintOpacity }}
+      />
       <div className="absolute inset-0 bg-gradient-to-b from-[#03080f]/36 via-[#03080f]/16 to-[#03080f]/40" />
+      <div
+        className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_38%,rgba(200,255,120,0.14)_0%,transparent_42%)] mix-blend-screen transition-opacity duration-75"
+        style={{ opacity: 0.28 + b * 0.62 }}
+      />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_42%,transparent_0%,rgba(3,8,15,0.22)_65%,rgba(3,8,15,0.48)_100%)]" />
     </div>
   );
@@ -326,6 +365,8 @@ function HeroBackdrop({
   soundEnabled,
   heroUnmutedPlayback,
   videoRefs,
+  beat,
+  reduceMotion,
 }: {
   slide: NormalizedSlide;
   instanceKey: string;
@@ -333,12 +374,14 @@ function HeroBackdrop({
   soundEnabled: boolean;
   heroUnmutedPlayback: boolean;
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
+  beat: number;
+  reduceMotion: boolean;
 }) {
   const audible =
     soundEnabled && instanceKey === activeInstanceKey && heroUnmutedPlayback;
   if (slide.type === "VIDEO") {
     return (
-      <HeroMediaCard>
+      <HeroMediaCard beat={beat} reduceMotion={reduceMotion}>
         <PortraitHeroFrame>
           <video
             ref={(el) => {
@@ -359,7 +402,7 @@ function HeroBackdrop({
     );
   }
   return (
-    <HeroMediaCard>
+    <HeroMediaCard beat={0} reduceMotion={reduceMotion}>
       <PortraitHeroFrame>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -437,6 +480,7 @@ function HeroSlideColumn({
   loadMedia,
   videoPreload,
   imageFetchPriority,
+  beat,
 }: {
   loopItem: LoopSlide;
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
@@ -448,6 +492,7 @@ function HeroSlideColumn({
   loadMedia: boolean;
   videoPreload: "none" | "metadata" | "auto";
   imageFetchPriority?: "high" | "low" | "auto";
+  beat: number;
 }) {
   return (
     <div className="flex h-full w-[86vw] max-w-[min(86vw,calc(min(90dvh,90svh)*9/16+40px))] shrink-0 snap-center items-center justify-center px-1 [scroll-snap-stop:always]">
@@ -464,7 +509,7 @@ function HeroSlideColumn({
         }
         transition={{ type: "spring", stiffness: 420, damping: 30, mass: 0.72 }}
       >
-        <HeroMediaCard>
+        <HeroMediaCard beat={isActive ? beat : 0} reduceMotion={reduceMotion}>
           <PortraitHeroFrame>
             <HeroSlideMedia
               slide={loopItem}
@@ -596,6 +641,25 @@ export function HeroCarousel({
     setSoundSnapshot(soundEnabled);
     if (!soundEnabled) setHeroUnmutedPlayback(false);
   }
+
+  const activeSlideForBeat = useMemo(() => {
+    if (mode === "empty") return null;
+    if (mode === "single") return normalized[0] ?? null;
+    return normalized[activeLogical] ?? normalized[0] ?? null;
+  }, [mode, normalized, activeLogical]);
+
+  const beatEligible =
+    mode !== "empty" &&
+    activeSlideForBeat?.type === "VIDEO" &&
+    soundEnabled &&
+    heroUnmutedPlayback;
+
+  const getBeatVideo = useCallback(() => {
+    if (!beatEligible) return null;
+    return videoRefs.current.get(activeVideoSyncKey) ?? null;
+  }, [beatEligible, activeVideoSyncKey]);
+
+  const beatEnergy = useHeroVideoBeat(getBeatVideo, beatEligible, !!reduceMotion);
 
   const heroLoadPlan = useMemo(() => {
     if (mode !== "simple" && mode !== "infinite") return null;
@@ -877,7 +941,7 @@ export function HeroCarousel({
         className="relative flex min-h-[min(90dvh,90svh)] w-full items-center justify-center overflow-hidden bg-ff-hero-void"
         aria-label="Firefly hero"
       >
-        <HeroAmbientBackdrop slide={s} reduceMotion={!!reduceMotion} />
+        <HeroAmbientBackdrop slide={s} reduceMotion={!!reduceMotion} beat={beatEnergy} />
         <div className="relative z-10 flex w-full items-center justify-center">
           <HeroBackdrop
             slide={s}
@@ -886,6 +950,8 @@ export function HeroCarousel({
             soundEnabled={soundEnabled}
             heroUnmutedPlayback={heroUnmutedPlayback}
             videoRefs={videoRefs}
+            beat={beatEnergy}
+            reduceMotion={!!reduceMotion}
           />
         </div>
         {s.type === "VIDEO" && (
@@ -914,7 +980,7 @@ export function HeroCarousel({
       className="relative min-h-[min(90dvh,90svh)] w-full overflow-hidden bg-ff-hero-void"
       aria-label="Firefly hero"
     >
-      <HeroAmbientBackdrop slide={ambientSlide} reduceMotion={!!reduceMotion} />
+      <HeroAmbientBackdrop slide={ambientSlide} reduceMotion={!!reduceMotion} beat={beatEnergy} />
       <div
         ref={scrollerRef}
         onScroll={onScrollUser}
@@ -939,6 +1005,7 @@ export function HeroCarousel({
                   loadMedia={loadMedia}
                   videoPreload={videoPreload}
                   imageFetchPriority={imageFetchPriority}
+                  beat={beatEnergy}
                 />
               );
             })
@@ -959,6 +1026,7 @@ export function HeroCarousel({
                   loadMedia={loadMedia}
                   videoPreload={videoPreload}
                   imageFetchPriority={imageFetchPriority}
+                  beat={beatEnergy}
                 />
               );
             })}

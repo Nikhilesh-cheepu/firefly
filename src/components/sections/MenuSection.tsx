@@ -7,6 +7,7 @@ export function MenuSection() {
     <SectionReveal
       id="menu"
       className="scroll-mt-6 bg-gradient-to-b from-ff-forest/40 via-ff-deep to-ff-void px-4 py-12 sm:px-6 md:py-16"
+      delay={0.03}
     >
       <div className="mx-auto max-w-6xl">
         <header className="mb-8 flex flex-col gap-4 md:mb-10 md:flex-row md:items-end md:justify-between">

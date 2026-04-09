@@ -5,7 +5,7 @@ import { getGalleryPreviewImages } from "@/lib/site-data";
 export async function GallerySection() {
   const images = await getGalleryPreviewImages();
   return (
-    <SectionReveal id="gallery" className="scroll-mt-6 bg-black px-1 py-5 sm:px-2 md:py-6">
+    <SectionReveal id="gallery" className="scroll-mt-6 bg-black px-1 py-5 sm:px-2 md:py-6" delay={0.04}>
       <div className="mx-auto max-w-6xl">
         <header className="mb-2 md:mb-3">
           <FadeInChild>

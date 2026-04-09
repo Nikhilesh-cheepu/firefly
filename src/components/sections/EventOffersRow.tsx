@@ -31,10 +31,10 @@ export function EventOffersRow({ offers }: Props) {
           <motion.article
             key={offer.id}
             className="group w-[min(78vw,260px)] shrink-0 snap-center sm:w-[min(42vw,260px)] md:w-[280px]"
-            initial={reduce ? undefined : { opacity: 0, y: 20, scale: 0.98 }}
+            initial={reduce ? undefined : { opacity: 0, y: 26, scale: 0.97 }}
             whileInView={reduce ? undefined : { opacity: 1, y: 0, scale: 1 }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.45, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] }}
+            viewport={{ once: true, margin: "-52px 0px -64px 0px", amount: 0.06 }}
+            transition={{ duration: 0.55, delay: i * 0.07, ease: [0.22, 1, 0.36, 1] }}
             whileHover={reduce ? undefined : { y: -4 }}
             whileTap={reduce ? undefined : { scale: 0.98 }}
           >

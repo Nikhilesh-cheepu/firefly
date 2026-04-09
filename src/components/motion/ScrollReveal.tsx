@@ -22,11 +22,11 @@ export function ScrollReveal({ children, className, delay = 0, y = 20 }: Props) 
   return (
     <motion.div
       className={className}
-      initial={{ opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.12, margin: "0px 0px -60px 0px" }}
+      initial={{ opacity: 0, y, scale: 0.995 }}
+      whileInView={{ opacity: 1, y: 0, scale: 1 }}
+      viewport={{ once: true, amount: 0.06, margin: "0px 0px -48px 0px" }}
       transition={{
-        duration: 0.55,
+        duration: 0.68,
         delay,
         ease: [0.22, 1, 0.36, 1],
       }}

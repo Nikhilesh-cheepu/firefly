@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import type { DisplayGuestReview } from "@/lib/guest-reviews";
 
 type Props = {
@@ -43,7 +43,13 @@ export function ReviewsMarqueeClient({ reviews }: Props) {
   }
 
   return (
-    <div className="group/reviews relative overflow-hidden py-1">
+    <motion.div
+      className="group/reviews relative overflow-hidden py-1"
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-48px 0px -80px 0px", amount: 0.05 }}
+      transition={{ duration: 0.58, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+    >
       <div className="ff-reviews-track flex w-max gap-4 pr-4">
         {loop.map((r, idx) => (
           <article
@@ -56,6 +62,6 @@ export function ReviewsMarqueeClient({ reviews }: Props) {
           </article>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 }

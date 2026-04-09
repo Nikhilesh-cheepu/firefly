@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { BridgeReveal } from "@/components/motion/BridgeReveal";
 import { ScrollReveal } from "@/components/motion/ScrollReveal";
-import { SectionBridge } from "@/components/SectionBridge";
 import { GalleryMasonryClient } from "@/components/sections/GalleryMasonryClient";
 import { getGalleryImages } from "@/lib/site-data";
 
@@ -32,7 +32,7 @@ export default async function FullGalleryPage() {
           </div>
         </ScrollReveal>
 
-        <SectionBridge className="from-ff-deep via-ff-forest/20 to-ff-deep/40" />
+        <BridgeReveal className="from-ff-deep via-ff-forest/20 to-ff-deep/40" />
 
         {images.length === 0 ? (
           <ScrollReveal y={20}>

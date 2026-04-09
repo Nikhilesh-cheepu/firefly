@@ -14,6 +14,7 @@ export function EventsSection({ offers, bassikConfigured = true }: Props) {
     <SectionReveal
       id="events"
       className="scroll-mt-6 bg-gradient-to-b from-ff-deep via-ff-void to-ff-deep px-4 py-7 sm:px-6 md:py-10"
+      delay={0.02}
     >
       <div className="mx-auto max-w-6xl">
         <header className="mb-4 md:mb-5">
