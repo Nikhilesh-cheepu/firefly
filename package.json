@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@prisma/client": "5.22.0",
+    "@vercel/analytics": "^2.0.1",
     "@vercel/blob": "^2.3.3",
     "framer-motion": "^12.38.0",
     "jose": "^6.2.2",

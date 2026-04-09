@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Bebas_Neue, DM_Sans, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { RestoreScrollOnLoad } from "@/components/RestoreScrollOnLoad";
@@ -54,6 +55,7 @@ export default function RootLayout({
         </Script>
         <RestoreScrollOnLoad />
         {children}
+        <Analytics />
       </body>
     </html>
   );
