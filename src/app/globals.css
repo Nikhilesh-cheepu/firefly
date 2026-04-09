@@ -48,6 +48,14 @@ html {
   overflow-anchor: none;
   /* Matches theme-color + body: notch / island / overscroll use hero void, not flat black */
   background-color: var(--color-ff-hero-void);
+  /* Hide native vertical scrollbar overlay (thin line while scrolling on mobile / WebKit). */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  background: transparent;
 }
 
 /* Hero: CSS-only motion avoids Framer blur/filter on text (PageSpeed LCP + compositing). */
@@ -62,8 +70,36 @@ html {
   }
 }
 
+@keyframes ff-hero-chevron-left {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-6px);
+  }
+}
+
+@keyframes ff-hero-chevron-right {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(6px);
+  }
+}
+
 .ff-hero-hint-pop {
   animation: ff-hero-hint-in 0.45s ease-out both;
+}
+
+.ff-hero-chevron-left {
+  animation: ff-hero-chevron-left 2.1s ease-in-out infinite;
+}
+
+.ff-hero-chevron-right {
+  animation: ff-hero-chevron-right 2.1s ease-in-out infinite;
 }
 
 @keyframes ff-reviews-marquee {
@@ -88,8 +124,13 @@ html {
     animation: none;
   }
 
-  .ff-hero-hint-pop {
+  .ff-hero-hint-pop,
+  .ff-hero-chevron-left,
+  .ff-hero-chevron-right {
     animation: none;
+  }
+
+  .ff-hero-hint-pop {
     opacity: 1;
     transform: none;
   }
@@ -101,6 +142,8 @@ html {
 
 body {
   overflow-anchor: none;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   background: radial-gradient(ellipse 120% 80% at 50% -20%, rgba(124, 245, 198, 0.08), transparent),
     radial-gradient(ellipse 80% 50% at 100% 50%, rgba(107, 92, 255, 0.06), transparent),
     var(--background);
@@ -109,6 +152,11 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  background: transparent;
 }
 
 /* Card depth + gentle lift on hover (disabled when user prefers reduced motion) */
