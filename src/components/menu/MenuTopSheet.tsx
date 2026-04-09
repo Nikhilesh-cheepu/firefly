@@ -21,14 +21,6 @@ type Props = {
   beverageItems: ListItem[];
 };
 
-function DisclaimerText() {
-  return (
-    <>
-      Sample menu — we&apos;re updating our menu; items, prices, and times may change.
-    </>
-  );
-}
-
 export function MenuTopSheet({
   active,
   onClose,
@@ -111,10 +103,6 @@ export function MenuTopSheet({
                   Close
                 </button>
               </div>
-              <p className="mb-4 rounded-xl border border-ff-mint/25 bg-ff-deep/60 px-3 py-2.5 text-center text-xs leading-relaxed text-ff-mist/90">
-                <DisclaimerText />
-              </p>
-
               {active === "happy" && (
                 <div className="space-y-6 pb-2">
                   {happyHourGroups.map((g) => (

@@ -49,6 +49,21 @@ export async function deleteGalleryImage(formData: FormData) {
   redirect("/admin/gallery");
 }
 
+export async function deleteGalleryImages(formData: FormData) {
+  await assertAdminSession();
+  const ids = formData
+    .getAll("ids")
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+  if (ids.length === 0) return;
+
+  const prisma = requirePrisma();
+  await prisma.galleryImage.deleteMany({ where: { id: { in: ids } } });
+  revalidatePath("/");
+  revalidatePath("/admin/gallery");
+  redirect("/admin/gallery");
+}
+
 export async function moveGalleryImage(formData: FormData) {
   await assertAdminSession();
   const id = str(formData.get("id"));

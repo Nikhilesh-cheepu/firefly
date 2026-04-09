@@ -1,17 +1,13 @@
-import type { GalleryImage } from "@prisma/client";
 import { FadeInChild } from "@/components/motion/FadeInChild";
 import { SectionReveal } from "@/components/motion/SectionReveal";
-import { GalleryMasonryClient } from "@/components/sections/GalleryMasonryClient";
-
-type Props = {
-  images: GalleryImage[];
-};
-
-export function GallerySection({ images }: Props) {
+import { GalleryFloatingPreviewClient } from "@/components/sections/GalleryFloatingPreviewClient";
+import { getGalleryPreviewImages } from "@/lib/site-data";
+export async function GallerySection() {
+  const images = await getGalleryPreviewImages();
   return (
-    <SectionReveal id="gallery" className="scroll-mt-6 bg-ff-deep px-4 py-12 sm:px-6 md:py-16">
+    <SectionReveal id="gallery" className="scroll-mt-6 bg-black px-1 py-5 sm:px-2 md:py-6">
       <div className="mx-auto max-w-6xl">
-        <header className="mb-8 md:mb-10">
+        <header className="mb-2 md:mb-3">
           <FadeInChild>
             <p className="text-xs font-medium uppercase tracking-[0.3em] text-ff-mint/90">
               Inside
@@ -22,9 +18,6 @@ export function GallerySection({ images }: Props) {
             >
               Gallery
             </h2>
-            <p className="mt-3 max-w-xl text-ff-mist/85">
-              Tap any tile for a full view — curated from the admin gallery.
-            </p>
           </FadeInChild>
         </header>
 
@@ -36,7 +29,9 @@ export function GallerySection({ images }: Props) {
             </p>
           </FadeInChild>
         ) : (
-          <GalleryMasonryClient images={images} />
+          <FadeInChild delay={0.05}>
+            <GalleryFloatingPreviewClient images={images} />
+          </FadeInChild>
         )}
       </div>
     </SectionReveal>

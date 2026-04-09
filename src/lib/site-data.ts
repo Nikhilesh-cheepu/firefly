@@ -92,6 +92,20 @@ export async function getGalleryImages() {
   }
 }
 
+export async function getGalleryPreviewImages(limit = 14) {
+  const prisma = getPrisma();
+  if (!prisma) return [];
+
+  try {
+    return await prisma.galleryImage.findMany({
+      orderBy: { sortOrder: "asc" },
+      take: limit,
+    });
+  } catch {
+    return [];
+  }
+}
+
 export async function getHeroSlides(): Promise<HeroSlide[]> {
   const prisma = getPrisma();
   if (!prisma) return [];

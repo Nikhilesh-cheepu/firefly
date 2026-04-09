@@ -595,12 +595,12 @@ export function HeroCarousel({
     const links: HTMLLinkElement[] = [];
     const seen = new Set<string>();
 
-    const pushPreload = (href: string, as: "video" | "image") => {
+    const pushPreloadImage = (href: string) => {
       if (!href || seen.has(href)) return;
       seen.add(href);
       const link = document.createElement("link");
       link.rel = "preload";
-      link.as = as;
+      link.as = "image";
       link.href = href;
       document.head.appendChild(link);
       links.push(link);
@@ -610,12 +610,12 @@ export function HeroCarousel({
       for (const j of [1, 2, 3]) {
         const s = loopSlides[j];
         if (!s) break;
-        pushPreload(s.mediaUrl, s.type === "VIDEO" ? "video" : "image");
+        if (s.type !== "VIDEO") pushPreloadImage(s.mediaUrl);
       }
     } else {
       for (let j = 0; j < Math.min(3, normalized.length); j++) {
         const s = normalized[j]!;
-        pushPreload(s.mediaUrl, s.type === "VIDEO" ? "video" : "image");
+        if (s.type !== "VIDEO") pushPreloadImage(s.mediaUrl);
       }
     }
 

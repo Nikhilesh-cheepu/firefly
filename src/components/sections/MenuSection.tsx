@@ -20,24 +20,12 @@ export function MenuSection() {
             >
               Menu
             </h2>
-            <p className="mt-3 max-w-xl text-ff-mist/85">
-              Tap food, drinks, or happy hours — sample lists only until the final menu is live.
-            </p>
           </FadeInChild>
           <FadeInChild delay={0.04} className="w-full md:max-w-xl md:flex-1">
             <MenuSheetButtonsRow />
           </FadeInChild>
         </header>
 
-        <FadeInChild delay={0.06}>
-          <p
-            role="status"
-            className="rounded-2xl border border-amber-400/35 bg-amber-500/10 px-4 py-3 text-center text-sm leading-relaxed text-amber-100/95 backdrop-blur-sm"
-          >
-            <span className="font-semibold text-amber-200">Sample menu — not final.</span> We&apos;re
-            updating our menu; items and prices may change.
-          </p>
-        </FadeInChild>
       </div>
     </SectionReveal>
   );

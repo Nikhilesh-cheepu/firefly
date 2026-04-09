@@ -9,16 +9,12 @@ import { HeroCarousel } from "@/components/sections/HeroCarousel";
 import { MenuSection } from "@/components/sections/MenuSection";
 import { ReviewsSection } from "@/components/sections/ReviewsSection";
 import { DUMMY_HAPPY_HOURS, DUMMY_MENU_CATEGORIES } from "@/data/dummy-menu";
-import { getGalleryImages, getHeroSlides, getSiteSettings } from "@/lib/site-data";
+import { getHeroSlides, getSiteSettings } from "@/lib/site-data";
 
 export const revalidate = 30;
 
 export default async function Home() {
-  const [settings, heroSlides, gallery] = await Promise.all([
-    getSiteSettings(),
-    getHeroSlides(),
-    getGalleryImages(),
-  ]);
+  const [settings, heroSlides] = await Promise.all([getSiteSettings(), getHeroSlides()]);
 
   const foodItems = DUMMY_MENU_CATEGORIES[0]?.items ?? [];
   const beverageItems = DUMMY_MENU_CATEGORIES[1]?.items ?? [];
@@ -42,7 +38,9 @@ export default async function Home() {
         <SectionBridge className="from-ff-deep via-ff-forest/25 to-ff-forest/40" />
         <MenuSection />
         <SectionBridge className="from-ff-void via-ff-deep/60 to-ff-deep" />
-        <GallerySection images={gallery} />
+        <Suspense fallback={<div className="h-40 bg-black/70" />}>
+          <GallerySection />
+        </Suspense>
         <SectionBridge className="from-ff-deep via-ff-void/70 to-ff-void" />
         <ReviewsSection />
         <SectionBridge className="from-ff-void via-ff-deep/50 to-ff-deep" />

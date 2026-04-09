@@ -19,67 +19,75 @@ export function GalleryUploadForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
   const [drag, setDrag] = useState(false);
 
-  const processFile = useCallback(
-    async (file: File | undefined) => {
-      if (!file) return;
+  const processFiles = useCallback(
+    async (files: File[]) => {
+      if (files.length === 0) return;
       setError(null);
       setProgress(null);
-
-      if (!file.type.startsWith("image/")) {
-        setError("Use a photo (JPG, PNG, WebP, GIF, or HEIC where supported).");
-        return;
-      }
-
       setBusy(true);
       try {
-        let toUpload: File = file;
-        if (file.size > MAX_STORED) {
-          toUpload = await compressImageToMaxBytes(file, MAX_STORED);
-        }
-        if (toUpload.size > MAX_STORED) {
-          setError(
-            "Could not compress this image below 5MB. Try a different resolution or format.",
-          );
-          return;
+        let uploaded = 0;
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i]!;
+          setStatus(`Uploading ${i + 1}/${files.length}: ${file.name}`);
+
+          if (!file.type.startsWith("image/")) {
+            continue;
+          }
+
+          let toUpload: File = file;
+          if (file.size > MAX_STORED) {
+            toUpload = await compressImageToMaxBytes(file, MAX_STORED);
+          }
+          if (toUpload.size > MAX_STORED) {
+            continue;
+          }
+
+          const multipart = toUpload.size > 4 * 1024 * 1024;
+          const { url } = await upload(safeBlobPath(toUpload), toUpload, {
+            access: "public",
+            handleUploadUrl: "/api/admin/blob",
+            multipart,
+            onUploadProgress: ({ percentage }) => {
+              const filePart = percentage / files.length;
+              const donePart = (i * 100) / files.length;
+              setProgress(Math.min(100, donePart + filePart));
+            },
+          });
+
+          const result = await addGalleryImageFromUpload(url, null);
+          if (result.ok) uploaded++;
         }
 
-        const multipart = toUpload.size > 4 * 1024 * 1024;
-        const { url } = await upload(safeBlobPath(toUpload), toUpload, {
-          access: "public",
-          handleUploadUrl: "/api/admin/blob",
-          multipart,
-          onUploadProgress: ({ percentage }) => setProgress(percentage),
-        });
-
-        const result = await addGalleryImageFromUpload(url, null);
-        if (!result.ok) {
-          setError(result.error);
-          return;
+        if (uploaded === 0) {
+          setError("No valid images were uploaded. Use JPG/PNG/WebP/GIF.");
+        } else {
+          router.refresh();
         }
-
-        router.refresh();
         if (inputRef.current) inputRef.current.value = "";
       } catch (e) {
         setError(e instanceof Error ? e.message : "Upload failed. Check Blob token and try again.");
       } finally {
         setBusy(false);
         setProgress(null);
+        setStatus(null);
       }
     },
     [router],
   );
 
   const onInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    void processFile(e.target.files?.[0]);
+    void processFiles(Array.from(e.target.files ?? []));
   };
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDrag(false);
     if (busy) return;
-    void processFile(e.dataTransfer.files?.[0]);
+    void processFiles(Array.from(e.dataTransfer.files ?? []));
   };
 
   return (
@@ -87,6 +95,7 @@ export function GalleryUploadForm() {
       <input
         ref={inputRef}
         type="file"
+        multiple
         accept="image/*"
         className="sr-only"
         onChange={onInputChange}
@@ -101,7 +110,7 @@ export function GalleryUploadForm() {
 
       <p className="mb-3 text-xs leading-relaxed text-ff-mist/70">
         Any file size is accepted. Images larger than 5MB are compressed in the browser before upload so
-        they stay under 5MB.
+        they stay under 5MB. You can upload multiple files at once.
       </p>
 
       <button
@@ -127,13 +136,14 @@ export function GalleryUploadForm() {
         }
       >
         <span className="text-sm font-medium text-white">
-          {busy ? "Uploading…" : "Drop an image here or tap to choose"}
+          {busy ? "Uploading…" : "Drop images here or tap to choose"}
         </span>
         <span className="text-xs text-ff-mist/65">JPEG, PNG, WebP, GIF — auto-compressed if over 5MB</span>
       </button>
 
       {progress != null && (
         <div className="mt-4">
+          {status && <p className="mb-2 text-xs text-ff-mist/70">{status}</p>}
           <div className="h-1 overflow-hidden rounded-full bg-ff-void ring-1 ring-ff-glow/20">
             <div
               className="h-full bg-gradient-to-r from-ff-glow to-ff-mint transition-[width] duration-200"
