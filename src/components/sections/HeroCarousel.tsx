@@ -32,7 +32,6 @@ type NormalizedSlide = {
 type LoopSlide = NormalizedSlide & { instanceKey: string };
 
 const HINT_KEY = "firefly-hero-swipe-hint";
-const HERO_SOUND_STORAGE_KEY = "firefly-hero-sound-on";
 
 /** Slide strip width fraction (used only for non–snap-center fallbacks). */
 const SLIDE_VIEWPORT_FRAC = 0.86;
@@ -130,8 +129,8 @@ function prepareHeroVideoEl(v: HTMLVideoElement) {
 }
 
 /**
- * Unmuted play() usually fails on iOS/Android without a user gesture (slide swipe does not count).
- * Start muted, await play(), then unmute — one global sound toggle applies to whichever video is centered.
+ * Browsers block unmuted autoplay until a user gesture. We unlock on first scroll/touch/pointer/wheel
+ * (see audioUnlocked), then start muted, await play(), and unmute. Hero off-screen pauses (syncHeroVideos).
  */
 async function tryPlayHeroVideo(v: HTMLVideoElement, wantSound: boolean) {
   prepareHeroVideoEl(v);
@@ -183,61 +182,6 @@ async function tryPlayHeroVideo(v: HTMLVideoElement, wantSound: boolean) {
     ]);
     await attempt();
   }
-}
-
-function IconVolumeOn({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M11 5L6 9H2v6h4l5 4V5zm7.54 3.46l-1.42-1.42a6.98 6.98 0 010 9.9l1.42 1.42a8.98 8.98 0 000-12.72zm-2.83 2.83l-1.41-1.41a3 3 0 000 4.24l1.41-1.41a1 1 0 000-1.42z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function IconVolumeOff({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 4v-5.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.94 8.94 0 003.9-2.28L19.73 21 21 19.73l-9-9L4.27 3zM12 4.09L9.91 6.18 12 8.27V4.09z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function HeroSoundToggle({
-  soundEnabled,
-  setSoundEnabled,
-}: {
-  soundEnabled: boolean;
-  setSoundEnabled: (v: boolean) => void;
-}) {
-  return (
-    <div className="pointer-events-none absolute bottom-[calc(10rem+env(safe-area-inset-bottom))] right-3 z-30 sm:bottom-[calc(10.5rem+env(safe-area-inset-bottom))] md:right-5">
-      <button
-        type="button"
-        aria-label={soundEnabled ? "Mute hero videos" : "Unmute hero videos"}
-        aria-pressed={soundEnabled}
-        onClick={() => {
-          const next = !soundEnabled;
-          setSoundEnabled(next);
-          try {
-            if (typeof window !== "undefined") {
-              if (next) window.sessionStorage.setItem(HERO_SOUND_STORAGE_KEY, "1");
-              else window.sessionStorage.removeItem(HERO_SOUND_STORAGE_KEY);
-            }
-          } catch {
-            /* private mode */
-          }
-        }}
-        className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-ff-glow/40 bg-[#03080f]/85 text-ff-glow shadow-[0_0_18px_rgba(200,255,120,0.16)] backdrop-blur-md transition hover:border-ff-mint/50 hover:text-ff-mint"
-      >
-        {soundEnabled ? <IconVolumeOn /> : <IconVolumeOff />}
-      </button>
-    </div>
-  );
 }
 
 function mobileHeroMaxHeightClass() {
@@ -368,7 +312,8 @@ function HeroBackdrop({
   slide,
   instanceKey,
   activeInstanceKey,
-  soundEnabled,
+  heroInView,
+  audioUnlocked,
   videoRefs,
   beat,
   reduceMotion,
@@ -376,12 +321,14 @@ function HeroBackdrop({
   slide: NormalizedSlide;
   instanceKey: string;
   activeInstanceKey: string;
-  soundEnabled: boolean;
+  heroInView: boolean;
+  /** First scroll / touch / pointer / wheel — counts as gesture so we may unmute (browser policy). */
+  audioUnlocked: boolean;
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
   beat: number;
   reduceMotion: boolean;
 }) {
-  const audible = soundEnabled && instanceKey === activeInstanceKey;
+  const audible = heroInView && audioUnlocked && instanceKey === activeInstanceKey;
   if (slide.type === "VIDEO") {
     return (
       <HeroMediaCard beat={beat} reduceMotion={reduceMotion}>
@@ -423,7 +370,8 @@ function HeroSlideMedia({
   slide,
   instanceKey,
   activeInstanceKey,
-  soundEnabled,
+  heroInView,
+  audioUnlocked,
   videoRefs,
   loadMedia,
   videoPreload,
@@ -432,13 +380,14 @@ function HeroSlideMedia({
   slide: NormalizedSlide;
   instanceKey: string;
   activeInstanceKey: string;
-  soundEnabled: boolean;
+  heroInView: boolean;
+  audioUnlocked: boolean;
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
   loadMedia: boolean;
   videoPreload: "none" | "metadata" | "auto";
   imageFetchPriority?: "high" | "low" | "auto";
 }) {
-  const audible = soundEnabled && instanceKey === activeInstanceKey;
+  const audible = heroInView && audioUnlocked && instanceKey === activeInstanceKey;
   if (slide.type === "VIDEO") {
     return (
       <video
@@ -473,7 +422,8 @@ function HeroSlideColumn({
   loopItem,
   videoRefs,
   activeInstanceKey,
-  soundEnabled,
+  heroInView,
+  audioUnlocked,
   isActive,
   reduceMotion,
   loadMedia,
@@ -484,7 +434,8 @@ function HeroSlideColumn({
   loopItem: LoopSlide;
   videoRefs: MutableRefObject<Map<string, HTMLVideoElement | null>>;
   activeInstanceKey: string;
-  soundEnabled: boolean;
+  heroInView: boolean;
+  audioUnlocked: boolean;
   isActive: boolean;
   reduceMotion: boolean;
   loadMedia: boolean;
@@ -513,7 +464,8 @@ function HeroSlideColumn({
               slide={loopItem}
               instanceKey={loopItem.instanceKey}
               activeInstanceKey={activeInstanceKey}
-              soundEnabled={soundEnabled}
+              heroInView={heroInView}
+              audioUnlocked={audioUnlocked}
               videoRefs={videoRefs}
               loadMedia={loadMedia}
               videoPreload={videoPreload}
@@ -541,7 +493,14 @@ export function HeroCarousel({
   const [activeLogical, setActiveLogical] = useState(0);
   const [activeInstanceKey, setActiveInstanceKey] = useState("");
   const [hintVisible, setHintVisible] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  /** Assume visible until IntersectionObserver runs so first paint attempts audible autoplay. */
+  const [heroInView, setHeroInView] = useState(true);
+  /**
+   * Browsers require a user gesture for unmuted playback. Any scroll, touch, pointer, or wheel
+   * on the page unlocks hero audio once (no visible control).
+   */
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const heroSectionRef = useRef<HTMLElement | null>(null);
   const videoRefs = useRef<Map<string, HTMLVideoElement | null>>(new Map());
   const activeVideoSyncKeyRef = useRef("");
   const prevActiveVideoKeyRef = useRef("");
@@ -587,7 +546,7 @@ export function HeroCarousel({
     return [];
   }, [slides, fallbackVideo, fallbackPoster]);
 
-  const hasAnyVideo = useMemo(
+  const hasHeroVideo = useMemo(
     () => normalized.some((s) => s.type === "VIDEO"),
     [normalized],
   );
@@ -632,14 +591,44 @@ export function HeroCarousel({
   }
 
   useEffect(() => {
-    try {
-      if (typeof window !== "undefined" && window.sessionStorage.getItem(HERO_SOUND_STORAGE_KEY) === "1") {
-        setSoundEnabled(true);
-      }
-    } catch {
-      /* private mode */
-    }
-  }, []);
+    if (typeof window === "undefined" || mode === "empty") return;
+    const el = heroSectionRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const e = entries[0];
+        if (!e) return;
+        setHeroInView(e.isIntersecting);
+      },
+      { threshold: 0, root: null, rootMargin: "0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [mode, normalized.length]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+    if (mode === "empty" || !hasHeroVideo || audioUnlocked) return;
+
+    const opts = { passive: true, capture: true } as const;
+    const unlock = () => {
+      setAudioUnlocked((prev) => (prev ? prev : true));
+    };
+
+    document.addEventListener("pointerdown", unlock, opts);
+    document.addEventListener("touchstart", unlock, opts);
+    document.addEventListener("wheel", unlock, opts);
+    window.addEventListener("scroll", unlock, opts);
+    window.addEventListener("keydown", unlock, opts);
+
+    return () => {
+      document.removeEventListener("pointerdown", unlock, opts);
+      document.removeEventListener("touchstart", unlock, opts);
+      document.removeEventListener("wheel", unlock, opts);
+      window.removeEventListener("scroll", unlock, opts);
+      window.removeEventListener("keydown", unlock, opts);
+    };
+  }, [mode, hasHeroVideo, audioUnlocked]);
 
   const activeSlideForBeat = useMemo(() => {
     if (mode === "empty") return null;
@@ -648,7 +637,10 @@ export function HeroCarousel({
   }, [mode, normalized, activeLogical]);
 
   const beatEligible =
-    mode !== "empty" && activeSlideForBeat?.type === "VIDEO" && soundEnabled;
+    mode !== "empty" &&
+    activeSlideForBeat?.type === "VIDEO" &&
+    heroInView &&
+    audioUnlocked;
 
   const beatEnergy = useHeroAmbientPulse(beatEligible, !!reduceMotion);
 
@@ -704,6 +696,16 @@ export function HeroCarousel({
     videoRefs.current.forEach((v, key) => {
       if (!v || v.tagName !== "VIDEO") return;
       if (key === activeKey) {
+        if (!heroInView) {
+          prepareHeroVideoEl(v);
+          v.muted = true;
+          try {
+            v.pause();
+          } catch {
+            /* ignore */
+          }
+          return;
+        }
         if (!v.src) return;
         if (activeChanged) {
           try {
@@ -717,7 +719,7 @@ export function HeroCarousel({
             /* ignore */
           }
         }
-        const wantSound = soundEnabled && key === activeKey;
+        const wantSound = heroInView && audioUnlocked && key === activeKey;
         void tryPlayHeroVideo(v, wantSound);
       } else {
         prepareHeroVideoEl(v);
@@ -730,7 +732,7 @@ export function HeroCarousel({
         }
       }
     });
-  }, [activeVideoSyncKey, soundEnabled]);
+  }, [activeVideoSyncKey, heroInView, audioUnlocked]);
 
   useEffect(() => {
     if (normalized.length === 0) return;
@@ -739,7 +741,7 @@ export function HeroCarousel({
       requestAnimationFrame(() => syncHeroVideos());
     };
     queueMicrotask(run);
-  }, [syncHeroVideos, soundEnabled, normalized.length, activeVideoSyncKey]);
+  }, [syncHeroVideos, heroInView, audioUnlocked, normalized.length, activeVideoSyncKey]);
 
   useEffect(() => {
     activeLogicalRef.current = activeLogical;
@@ -908,6 +910,7 @@ export function HeroCarousel({
   if (mode === "empty") {
     return (
       <section
+        ref={heroSectionRef}
         className="relative flex min-h-[min(90dvh,90svh)] w-full items-center justify-center overflow-hidden bg-ff-hero-void px-6"
         aria-label="Firefly hero"
       >
@@ -924,6 +927,7 @@ export function HeroCarousel({
     const ik = s.key;
     return (
       <section
+        ref={heroSectionRef}
         className="relative flex min-h-[min(90dvh,90svh)] w-full items-center justify-center overflow-hidden bg-ff-hero-void"
         aria-label="Firefly hero"
       >
@@ -933,15 +937,13 @@ export function HeroCarousel({
             slide={s}
             instanceKey={ik}
             activeInstanceKey={ik}
-            soundEnabled={soundEnabled}
+            heroInView={heroInView}
+            audioUnlocked={audioUnlocked}
             videoRefs={videoRefs}
             beat={beatEnergy}
             reduceMotion={!!reduceMotion}
           />
         </div>
-        {s.type === "VIDEO" && (
-          <HeroSoundToggle soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled} />
-        )}
       </section>
     );
   }
@@ -957,6 +959,7 @@ export function HeroCarousel({
 
   return (
     <section
+      ref={heroSectionRef}
       className="relative min-h-[min(90dvh,90svh)] w-full overflow-hidden bg-ff-hero-void"
       aria-label="Firefly hero"
     >
@@ -978,7 +981,8 @@ export function HeroCarousel({
                   loopItem={item}
                   videoRefs={videoRefs}
                   activeInstanceKey={soundTargetInstanceKey}
-                  soundEnabled={soundEnabled}
+                  heroInView={heroInView}
+                  audioUnlocked={audioUnlocked}
                   isActive={item.key === activeSlideKey}
                   reduceMotion={!!reduceMotion}
                   loadMedia={loadMedia}
@@ -998,7 +1002,8 @@ export function HeroCarousel({
                   loopItem={{ ...s, instanceKey: s.key }}
                   videoRefs={videoRefs}
                   activeInstanceKey={soundTargetInstanceKey}
-                  soundEnabled={soundEnabled}
+                  heroInView={heroInView}
+                  audioUnlocked={audioUnlocked}
                   isActive={s.key === activeSlideKey}
                   reduceMotion={!!reduceMotion}
                   loadMedia={loadMedia}
@@ -1009,10 +1014,6 @@ export function HeroCarousel({
               );
             })}
       </div>
-
-      {hasAnyVideo && (
-        <HeroSoundToggle soundEnabled={soundEnabled} setSoundEnabled={setSoundEnabled} />
-      )}
 
       <div
         className="pointer-events-none absolute inset-y-0 left-0 z-30 w-[min(7vw,2rem)]"
