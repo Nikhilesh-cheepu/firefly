@@ -1,13 +1,10 @@
-export type DummyReview = {
-  id: string;
-  name: string;
-  /** 4.7 – 5.0 */
-  rating: number;
-  quote: string;
-};
+import type { DisplayGuestReview } from "@/lib/guest-reviews";
 
-/** Placeholder reviews for the home marquee — replace with real data later. */
-export const DUMMY_REVIEWS: DummyReview[] = [
+/** @deprecated Use `DisplayGuestReview` — kept for older imports. */
+export type DummyReview = DisplayGuestReview;
+
+/** Fallback when the database is not configured (local dev / preview). */
+export const DUMMY_REVIEWS: DisplayGuestReview[] = [
   {
     id: "r1",
     name: "Ananya K.",

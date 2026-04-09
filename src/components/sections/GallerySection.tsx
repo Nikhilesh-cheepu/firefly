@@ -9,11 +9,8 @@ export async function GallerySection() {
       <div className="mx-auto max-w-6xl">
         <header className="mb-2 md:mb-3">
           <FadeInChild>
-            <p className="text-xs font-medium uppercase tracking-[0.3em] text-ff-mint/90">
-              Inside
-            </p>
             <h2
-              className="mt-2 font-[family-name:var(--font-display)] text-4xl text-ff-glow md:text-5xl"
+              className="font-[family-name:var(--font-display)] text-4xl text-ff-glow md:text-5xl"
               style={{ textShadow: "0 0 36px rgba(200,255,120,0.2)" }}
             >
               Gallery

@@ -1,10 +1,10 @@
 "use client";
 
 import { useReducedMotion } from "framer-motion";
-import type { DummyReview } from "@/data/dummy-reviews";
+import type { DisplayGuestReview } from "@/lib/guest-reviews";
 
 type Props = {
-  reviews: DummyReview[];
+  reviews: DisplayGuestReview[];
 };
 
 function StarRow({ rating }: { rating: number }) {

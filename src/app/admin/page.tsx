@@ -48,6 +48,17 @@ export default function AdminHomePage() {
             </p>
           </Link>
         </li>
+        <li>
+          <Link
+            href="/admin/reviews"
+            className="ff-card ff-card-interactive block rounded-2xl border border-ff-glow/15 bg-ff-deep/50 p-6 transition hover:border-ff-glow/30"
+          >
+            <h2 className="font-semibold text-white">Guest reviews</h2>
+            <p className="mt-1 text-sm text-ff-mist/80">
+              Approve or dismiss what people submit from the home page.
+            </p>
+          </Link>
+        </li>
       </ul>
     </div>
   );

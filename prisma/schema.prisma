@@ -72,3 +72,21 @@ model TableBooking {
   date      DateTime @db.Date
   slot      String
 }
+
+enum GuestReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model GuestReview {
+  id         String            @id @default(cuid())
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  status     GuestReviewStatus @default(PENDING)
+  rating     Float
+  body       String
+  authorName String
+
+  @@index([status])
+}

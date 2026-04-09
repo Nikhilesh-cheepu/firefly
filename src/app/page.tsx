@@ -52,9 +52,11 @@ export default async function Home() {
           </ScrollReveal>
         </Suspense>
         <SectionBridge className="from-ff-deep via-ff-void/70 to-ff-void" />
-        <ScrollReveal delay={0.06} y={22}>
-          <ReviewsSection />
-        </ScrollReveal>
+        <Suspense fallback={<div className="mx-auto h-52 max-w-6xl rounded-2xl bg-ff-deep/30 px-4 sm:px-6" />}>
+          <ScrollReveal delay={0.06} y={22}>
+            <ReviewsSection />
+          </ScrollReveal>
+        </Suspense>
         <SectionBridge className="from-ff-void via-ff-deep/50 to-ff-deep" />
         <ScrollReveal y={16}>
           <footer

@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { DUMMY_REVIEWS } from "../src/data/dummy-reviews";
 
 const prisma = new PrismaClient();
 
@@ -66,6 +67,26 @@ async function main() {
     },
     update: {},
   });
+
+  for (const r of DUMMY_REVIEWS) {
+    const id = `seed-rev-${r.id}`;
+    await prisma.guestReview.upsert({
+      where: { id },
+      create: {
+        id,
+        status: "APPROVED",
+        rating: r.rating,
+        body: r.quote,
+        authorName: r.name,
+      },
+      update: {
+        rating: r.rating,
+        body: r.quote,
+        authorName: r.name,
+        status: "APPROVED",
+      },
+    });
+  }
 }
 
 main()

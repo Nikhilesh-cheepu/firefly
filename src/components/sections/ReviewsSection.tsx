@@ -1,9 +1,16 @@
 import { FadeInChild } from "@/components/motion/FadeInChild";
 import { SectionReveal } from "@/components/motion/SectionReveal";
 import { ReviewsMarqueeClient } from "@/components/sections/ReviewsMarqueeClient";
+import { WriteReviewSheet } from "@/components/sections/WriteReviewSheet";
 import { DUMMY_REVIEWS } from "@/data/dummy-reviews";
+import { getPrisma } from "@/lib/db";
+import { getApprovedGuestReviews } from "@/lib/guest-reviews";
 
-export function ReviewsSection() {
+export async function ReviewsSection() {
+  const prisma = getPrisma();
+  const canSubmitReview = Boolean(prisma);
+  const reviews = prisma ? await getApprovedGuestReviews() : DUMMY_REVIEWS;
+
   return (
     <SectionReveal
       id="reviews"
@@ -19,14 +26,23 @@ export function ReviewsSection() {
             >
               Reviews
             </h2>
-            <p className="mt-3 max-w-xl text-ff-mist/85">
-              Sample guest feedback — placeholder until we plug in live ratings.
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-ff-mist/80">
+              Notes from nights out at Firefly — real voices from the floor.
             </p>
+            <WriteReviewSheet canSubmitReview={canSubmitReview} />
           </FadeInChild>
         </header>
       </div>
 
-      <ReviewsMarqueeClient reviews={DUMMY_REVIEWS} />
+      {reviews.length === 0 ? (
+        <div className="mx-auto max-w-6xl px-4 pb-2 text-center sm:px-6">
+          <p className="text-sm text-ff-mist/75">
+            Nothing here yet — when guests share their nights, you&apos;ll see them scroll by.
+          </p>
+        </div>
+      ) : (
+        <ReviewsMarqueeClient reviews={reviews} />
+      )}
     </SectionReveal>
   );
 }

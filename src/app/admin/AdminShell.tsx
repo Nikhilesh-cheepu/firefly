@@ -50,6 +50,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
               Bookings
             </Link>
             <Link
+              href="/admin/reviews"
+              className="rounded-lg px-3 py-2 text-ff-mist transition hover:bg-ff-deep hover:text-white"
+            >
+              Reviews
+            </Link>
+            <Link
               href="/"
               className="rounded-lg px-3 py-2 text-ff-mist transition hover:bg-ff-deep hover:text-white"
             >

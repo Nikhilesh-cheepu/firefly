@@ -1,7 +1,7 @@
 "use client";
 
 import type { GalleryImage } from "@prisma/client";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
@@ -35,7 +35,7 @@ export function GalleryFloatingPreviewClient({ images }: Props) {
     return limited.map((img, i) => {
       // Circular layout with deterministic up/down offsets and mixed radius.
       const angle = (Math.PI * 2 * i) / limited.length - Math.PI / 2;
-      const baseRadius = 35;
+      const baseRadius = 44;
       const radialScale = radialPattern[i % radialPattern.length];
       const radius = baseRadius * radialScale;
       const x = 50 + Math.cos(angle) * radius + xJitterPattern[i % xJitterPattern.length];
@@ -56,39 +56,56 @@ export function GalleryFloatingPreviewClient({ images }: Props) {
   if (!center) return null;
 
   return (
-    <div className="mx-auto max-w-md" suppressHydrationWarning>
+    <div className="mx-auto w-full max-w-xl px-0 sm:max-w-2xl" suppressHydrationWarning>
       <Link
         href="/gallery"
         prefetch={false}
-        className="group block p-0.5"
+        className="group block w-full p-0.5"
         aria-label="Open full gallery"
       >
-        <div className="relative mx-auto aspect-square w-full max-w-sm">
-          <motion.div
-            className="absolute left-1/2 top-1/2 h-[38%] w-[38%] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[1.7rem] border border-ff-glow/35 bg-ff-void shadow-[0_10px_30px_rgba(0,0,0,0.52)]"
-            key={center.id}
-            initial={reduce ? undefined : { opacity: 0.35, scale: 0.94 }}
-            animate={reduce ? undefined : { opacity: 1, scale: 1 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={center.url}
-              alt={center.alt ?? "Gallery cover"}
-              className="h-full w-full object-cover"
-              loading="lazy"
-              decoding="async"
-            />
-          </motion.div>
+        <div className="relative mx-auto aspect-square w-full max-w-[min(100%,28rem)] sm:max-w-[min(100%,34rem)]">
+          <div className="absolute left-1/2 top-1/2 h-[40%] w-[40%] -translate-x-1/2 -translate-y-1/2">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={center.id}
+                className="absolute inset-0 overflow-hidden rounded-[1.7rem] border border-ff-glow/35 bg-ff-void shadow-[0_12px_40px_rgba(0,0,0,0.55)]"
+                initial={
+                  reduce
+                    ? { opacity: 0 }
+                    : { opacity: 0, filter: "blur(14px)", scale: 1.02 }
+                }
+                animate={
+                  reduce
+                    ? { opacity: 1 }
+                    : { opacity: 1, filter: "blur(0px)", scale: 1 }
+                }
+                exit={
+                  reduce
+                    ? { opacity: 0 }
+                    : { opacity: 0, filter: "blur(12px)", scale: 0.98 }
+                }
+                transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={center.url}
+                  alt={center.alt ?? "Gallery cover"}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </motion.div>
+            </AnimatePresence>
+          </div>
 
           {orbit.map(({ img, i, left, top }) => {
             const sizeTier = i % 5;
             const size =
               sizeTier === 0
-                ? "h-[4.6rem] w-[4.6rem]"
+                ? "h-[5.75rem] w-[5.75rem] sm:h-[6.25rem] sm:w-[6.25rem]"
                 : sizeTier === 1
-                  ? "h-[4rem] w-[4rem]"
-                  : "h-[3.75rem] w-[3.75rem]";
+                  ? "h-[5.25rem] w-[5.25rem] sm:h-[5.75rem] sm:w-[5.75rem]"
+                  : "h-[4.85rem] w-[4.85rem] sm:h-[5.25rem] sm:w-[5.25rem]";
             return (
               <motion.div
                 key={img.id}
