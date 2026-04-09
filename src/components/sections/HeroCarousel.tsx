@@ -1015,27 +1015,6 @@ export function HeroCarousel({
             })}
       </div>
 
-      <div
-        className="pointer-events-none absolute inset-y-0 left-0 z-30 w-[min(7vw,2rem)]"
-        aria-hidden
-      >
-        <div
-          className={`flex h-full items-center justify-center pl-0.5 will-change-transform ${reduceMotion ? "" : "ff-hero-chevron-left"}`}
-        >
-          <div className="h-16 w-1 rounded-full bg-gradient-to-b from-ff-glow/15 via-ff-glow/45 to-ff-glow/15 shadow-[0_0_14px_rgba(200,255,120,0.28)]" />
-        </div>
-      </div>
-      <div
-        className="pointer-events-none absolute inset-y-0 right-0 z-30 w-[min(7vw,2rem)]"
-        aria-hidden
-      >
-        <div
-          className={`flex h-full items-center justify-center pr-0.5 will-change-transform ${reduceMotion ? "" : "ff-hero-chevron-right"}`}
-        >
-          <div className="h-16 w-1 rounded-full bg-gradient-to-b from-ff-glow/15 via-ff-glow/45 to-ff-glow/15 shadow-[0_0_14px_rgba(200,255,120,0.28)]" />
-        </div>
-      </div>
-
       {hintVisible && (
         <div className="pointer-events-none absolute left-1/2 top-[min(12%,5.25rem)] z-30 flex -translate-x-1/2 flex-col items-center gap-1.5">
           <div

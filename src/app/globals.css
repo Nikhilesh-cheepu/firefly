@@ -62,36 +62,8 @@ html {
   }
 }
 
-@keyframes ff-hero-chevron-left {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  50% {
-    transform: translateX(-6px);
-  }
-}
-
-@keyframes ff-hero-chevron-right {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  50% {
-    transform: translateX(6px);
-  }
-}
-
 .ff-hero-hint-pop {
   animation: ff-hero-hint-in 0.45s ease-out both;
-}
-
-.ff-hero-chevron-left {
-  animation: ff-hero-chevron-left 2.1s ease-in-out infinite;
-}
-
-.ff-hero-chevron-right {
-  animation: ff-hero-chevron-right 2.1s ease-in-out infinite;
 }
 
 @keyframes ff-reviews-marquee {
@@ -116,13 +88,8 @@ html {
     animation: none;
   }
 
-  .ff-hero-hint-pop,
-  .ff-hero-chevron-left,
-  .ff-hero-chevron-right {
-    animation: none;
-  }
-
   .ff-hero-hint-pop {
+    animation: none;
     opacity: 1;
     transform: none;
   }
