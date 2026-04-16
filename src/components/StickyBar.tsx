@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { telHrefFromInput, waMeHrefFromInput } from "@/lib/indian-phone";
 import type { SiteSettingsDTO } from "@/lib/site-data";
+import { trackEvent } from "@/lib/track-client";
 
 type Props = {
   settings: SiteSettingsDTO;
@@ -172,19 +173,22 @@ export function StickyBar({ settings }: Props) {
 
   const bookClassName =
     "inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-gradient-to-r from-ff-glow to-ff-glow-dim px-4 py-2.5 text-sm font-semibold text-ff-void ff-shadow-primary";
+  const onBookClick = useCallback(() => {
+    trackEvent({ eventType: "BOOKING_CLICK", source: "sticky_bar_book" });
+  }, []);
 
   const bookRaw = (settings.bookTableUrl ?? "#book").trim();
   const bookNode = (() => {
     if (isExternalUrl(bookRaw)) {
       return (
-        <a href={bookRaw} target="_blank" rel="noopener noreferrer" className={bookClassName}>
+        <a href={bookRaw} target="_blank" rel="noopener noreferrer" className={bookClassName} onClick={onBookClick}>
           Book table
         </a>
       );
     }
     if (bookRaw === "#book" || bookRaw === "" || bookRaw === "/#book") {
       return (
-        <Link href="/book" className={bookClassName}>
+        <Link href="/book" className={bookClassName} onClick={onBookClick}>
           Book table
         </Link>
       );
@@ -192,13 +196,20 @@ export function StickyBar({ settings }: Props) {
     if (bookRaw.startsWith("#") && bookRaw.length > 1) {
       const id = bookRaw.slice(1);
       return (
-        <button type="button" className={bookClassName} onClick={() => scrollToDomId(id, !reduce)}>
+        <button
+          type="button"
+          className={bookClassName}
+          onClick={() => {
+            onBookClick();
+            scrollToDomId(id, !reduce);
+          }}
+        >
           Book table
         </button>
       );
     }
     return (
-      <Link href={bookRaw} className={bookClassName} scroll={!bookRaw.includes("#")}>
+      <Link href={bookRaw} className={bookClassName} scroll={!bookRaw.includes("#")} onClick={onBookClick}>
         Book table
       </Link>
     );
@@ -291,6 +302,15 @@ export function StickyBar({ settings }: Props) {
                         {...(a.external
                           ? { target: "_blank" as const, rel: "noopener noreferrer" }
                           : {})}
+                        onClick={() => {
+                          if (a.key === "phone") {
+                            trackEvent({ eventType: "CALL_CLICK", source: "sticky_contact_sheet" });
+                          } else if (a.key === "wa") {
+                            trackEvent({ eventType: "WHATSAPP_CLICK", source: "sticky_contact_sheet" });
+                          } else if (a.key === "map") {
+                            trackEvent({ eventType: "LOCATION_CLICK", source: "sticky_contact_sheet" });
+                          }
+                        }}
                         className="flex min-h-[52px] items-center gap-3 rounded-xl border border-ff-glow/15 bg-ff-deep/80 px-4 py-3 text-left text-base font-medium text-ff-mist transition hover:border-ff-glow/30 hover:bg-ff-forest/50 hover:text-white"
                         whileTap={reduce ? undefined : { scale: 0.99 }}
                       >

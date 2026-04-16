@@ -26,6 +26,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </Link>
           <nav className="flex flex-wrap items-center gap-2 text-sm">
             <Link
+              href="/admin"
+              className="rounded-lg px-3 py-2 text-ff-mist transition hover:bg-ff-deep hover:text-white"
+            >
+              Analytics
+            </Link>
+            <Link
               href="/admin/settings"
               className="rounded-lg px-3 py-2 text-ff-mist transition hover:bg-ff-deep hover:text-white"
             >

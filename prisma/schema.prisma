@@ -79,6 +79,14 @@ enum GuestReviewStatus {
   REJECTED
 }
 
+enum AnalyticsEventType {
+  CALL_CLICK
+  WHATSAPP_CLICK
+  LOCATION_CLICK
+  BOOKING_CLICK
+  BOOKING_SUBMITTED
+}
+
 model GuestReview {
   id         String            @id @default(cuid())
   createdAt  DateTime          @default(now())
@@ -89,4 +97,16 @@ model GuestReview {
   authorName String
 
   @@index([status])
+}
+
+model AnalyticsEvent {
+  id         String             @id @default(cuid())
+  createdAt  DateTime           @default(now())
+  eventType  AnalyticsEventType
+  source     String?
+  sessionId  String?
+  meta       Json?
+
+  @@index([createdAt])
+  @@index([eventType, createdAt])
 }

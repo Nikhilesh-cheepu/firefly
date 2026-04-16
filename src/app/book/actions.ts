@@ -104,6 +104,12 @@ export async function submitTableBooking(input: {
           slot,
         },
       });
+      await prisma.analyticsEvent.create({
+        data: {
+          eventType: "BOOKING_SUBMITTED",
+          source: "book_page_submit",
+        },
+      });
     } catch (e) {
       console.error("TableBooking create failed", e);
     }

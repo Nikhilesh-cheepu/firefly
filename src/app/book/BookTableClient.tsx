@@ -9,6 +9,7 @@ import { ALL_BOOKING_SLOTS, DINNER_SLOTS, LUNCH_SLOTS } from "@/data/booking-slo
 import { BookingDatePicker } from "@/components/booking/BookingDatePicker";
 import { bookNowClayClassName, clayPillMutedClassName, ClayPillLabel } from "@/components/BookNowClayButton";
 import { addDaysISTYmd, istNowMinutesFromMidnight, istYmd } from "@/lib/ist-datetime";
+import { trackEvent } from "@/lib/track-client";
 
 type Props = {
   whatsappRaw: string | null;
@@ -110,6 +111,7 @@ export function BookTableClient({ whatsappRaw }: Props) {
   const visibleSlots = mealTab === "lunch" ? LUNCH_SLOTS : DINNER_SLOTS;
 
   const onConfirm = useCallback(async () => {
+    trackEvent({ eventType: "BOOKING_CLICK", source: "book_page_reserve_button" });
     setError(null);
     setBusy(true);
     try {
