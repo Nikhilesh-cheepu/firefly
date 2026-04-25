@@ -67,13 +67,12 @@ export default async function Home() {
       whatsappRaw={settings.whatsapp}
     >
       <main className="flex-1 pb-40 [overflow-anchor:none] [padding-left:max(0px,env(safe-area-inset-left))] [padding-right:max(0px,env(safe-area-inset-right))] sm:pb-36">
-        <ScrollReveal y={18}>
-          <HeroCarousel
-            slides={heroSlides}
-            fallbackVideo={settings.heroVideoUrl}
-            fallbackPoster={settings.heroPosterUrl}
-          />
-        </ScrollReveal>
+        <HeroCarousel
+          slides={heroSlides}
+          fallbackVideo={settings.heroVideoUrl}
+          fallbackPoster={settings.heroPosterUrl}
+          whatsappRaw={settings.whatsapp}
+        />
         <BridgeReveal className="from-ff-hero-void via-ff-deep/45 to-ff-deep" />
         <Suspense fallback={<EventsSectionSkeleton />}>
           <HomeEventsBlock />

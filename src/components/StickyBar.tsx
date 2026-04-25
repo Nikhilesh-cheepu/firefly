@@ -173,6 +173,14 @@ export function StickyBar({ settings }: Props) {
 
   const bookClassName =
     "inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-gradient-to-r from-ff-glow to-ff-glow-dim px-4 py-2.5 text-sm font-semibold text-ff-void ff-shadow-primary";
+  const bookLabelNode = (
+    <span className="inline-flex items-center gap-2 whitespace-nowrap">
+      <span>Book table</span>
+      <span className="rounded-full border border-ff-glow/35 bg-ff-glow/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-ff-void/90">
+        5% off
+      </span>
+    </span>
+  );
   const onBookClick = useCallback(() => {
     trackEvent({ eventType: "BOOKING_CLICK", source: "sticky_bar_book" });
   }, []);
@@ -182,14 +190,14 @@ export function StickyBar({ settings }: Props) {
     if (isExternalUrl(bookRaw)) {
       return (
         <a href={bookRaw} target="_blank" rel="noopener noreferrer" className={bookClassName} onClick={onBookClick}>
-          Book table
+          {bookLabelNode}
         </a>
       );
     }
     if (bookRaw === "#book" || bookRaw === "" || bookRaw === "/#book") {
       return (
         <Link href="/book" className={bookClassName} onClick={onBookClick}>
-          Book table
+          {bookLabelNode}
         </Link>
       );
     }
@@ -204,25 +212,24 @@ export function StickyBar({ settings }: Props) {
             scrollToDomId(id, !reduce);
           }}
         >
-          Book table
+          {bookLabelNode}
         </button>
       );
     }
     return (
       <Link href={bookRaw} className={bookClassName} scroll={!bookRaw.includes("#")} onClick={onBookClick}>
-        Book table
+        {bookLabelNode}
       </Link>
     );
   })();
 
   return (
     <>
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center pb-[max(0.5rem,env(safe-area-inset-bottom))] px-2">
+      <div className="pointer-events-none fixed inset-x-0 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-50 flex justify-center [padding-left:max(0.5rem,env(safe-area-inset-left))] [padding-right:max(0.5rem,env(safe-area-inset-right))]">
         <motion.nav
           className="pointer-events-auto w-full max-w-md rounded-[1.35rem] border border-ff-glow/22 bg-ff-void/92 px-2.5 py-2.5 ff-shadow-bar backdrop-blur-xl backdrop-saturate-150 sm:px-3"
-          initial={reduce ? undefined : { y: 24, opacity: 0 }}
-          animate={reduce ? undefined : { y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
+          initial={undefined}
+          animate={undefined}
           aria-label="Quick actions"
         >
           <div className="flex items-stretch gap-2">
