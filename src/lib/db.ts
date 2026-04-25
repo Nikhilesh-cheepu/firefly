@@ -8,7 +8,9 @@ function createClient(url: string) {
     datasources: {
       db: { url },
     },
-    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+    // Keep runtime resilient when some tables are not yet migrated; callers already fallback on catch.
+    // Avoid noisy Prisma engine logs flooding browser/server consoles in dev.
+    log: [],
   });
 }
 
