@@ -2,13 +2,11 @@
 
 import type { HeroSlide, HeroSlideType } from "@prisma/client";
 import { useMemo, useRef, useState } from "react";
-import { waMeHrefFromInput } from "@/lib/indian-phone";
 
 export type HeroCarouselProps = {
   slides: HeroSlide[];
   fallbackVideo: string | null;
   fallbackPoster: string | null;
-  whatsappRaw?: string | null;
 };
 
 type NormalizedSlide = {
@@ -58,7 +56,6 @@ export function HeroCarousel({
   slides,
   fallbackVideo,
   fallbackPoster,
-  whatsappRaw = null,
 }: HeroCarouselProps) {
   const [muted, setMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -83,16 +80,10 @@ export function HeroCarousel({
   }
 
   const isVideo = primary.type === "VIDEO";
-  const bookEventHref = useMemo(() => {
-    const base = waMeHrefFromInput(whatsappRaw);
-    if (!base) return null;
-    const msg = "i want to book an event at firefly";
-    return `${base}${base.includes("?") ? "&" : "?"}text=${encodeURIComponent(msg)}`;
-  }, [whatsappRaw]);
 
   return (
     <section
-      className="relative flex min-h-[100dvh] w-full items-center justify-center overflow-hidden bg-ff-hero-void"
+      className="relative h-[100svh] w-full overflow-hidden bg-ff-hero-void md:h-screen"
       aria-label="Firefly hero"
     >
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_25%,rgba(200,255,140,0.14),transparent_60%)]" />
@@ -150,16 +141,6 @@ export function HeroCarousel({
         </div>
       ) : null}
 
-      {bookEventHref ? (
-        <a
-          href={bookEventHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="absolute bottom-[calc(6.25rem+env(safe-area-inset-bottom))] left-1/2 z-20 -translate-x-1/2 text-sm font-semibold text-ff-glow underline underline-offset-4 transition hover:text-white"
-        >
-          Book event
-        </a>
-      ) : null}
     </section>
   );
 }

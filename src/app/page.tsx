@@ -71,7 +71,6 @@ export default async function Home() {
           slides={heroSlides}
           fallbackVideo={settings.heroVideoUrl}
           fallbackPoster={settings.heroPosterUrl}
-          whatsappRaw={settings.whatsapp}
         />
         <BridgeReveal className="from-ff-hero-void via-ff-deep/45 to-ff-deep" />
         <Suspense fallback={<EventsSectionSkeleton />}>

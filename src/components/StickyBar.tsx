@@ -172,11 +172,11 @@ export function StickyBar({ settings }: Props) {
     : { type: "spring" as const, stiffness: 420, damping: 34 };
 
   const bookClassName =
-    "inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-gradient-to-r from-ff-glow to-ff-glow-dim px-4 py-2.5 text-sm font-semibold text-ff-void ff-shadow-primary";
+    "inline-flex min-h-[42px] w-full items-center justify-center rounded-full bg-gradient-to-r from-ff-glow to-ff-glow-dim px-3 py-2 text-[13px] font-semibold text-ff-void ff-shadow-primary";
   const bookLabelNode = (
     <span className="inline-flex items-center gap-2 whitespace-nowrap">
       <span>Book table</span>
-      <span className="rounded-full border border-ff-glow/35 bg-ff-glow/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-ff-void/90">
+      <span className="rounded-full border border-ff-glow/35 bg-ff-glow/15 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[0.08em] text-ff-void/90">
         5% off
       </span>
     </span>
@@ -184,6 +184,12 @@ export function StickyBar({ settings }: Props) {
   const onBookClick = useCallback(() => {
     trackEvent({ eventType: "BOOKING_CLICK", source: "sticky_bar_book" });
   }, []);
+  const eventHref = useMemo(() => {
+    const wa = waMeHrefFromInput(settings.whatsapp);
+    if (!wa) return "/book";
+    const msg = "i want to book an event at firefly";
+    return `${wa}${wa.includes("?") ? "&" : "?"}text=${encodeURIComponent(msg)}`;
+  }, [settings.whatsapp]);
 
   const bookRaw = (settings.bookTableUrl ?? "#book").trim();
   const bookNode = (() => {
@@ -225,9 +231,12 @@ export function StickyBar({ settings }: Props) {
 
   return (
     <>
-      <div className="pointer-events-none fixed inset-x-0 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-50 flex justify-center [padding-left:max(0.5rem,env(safe-area-inset-left))] [padding-right:max(0.5rem,env(safe-area-inset-right))]">
+      <div
+        className="pointer-events-none fixed left-0 right-0 bottom-0 z-[99998] flex items-center justify-center px-2"
+        style={{ paddingBottom: "24px" }}
+      >
         <motion.nav
-          className="pointer-events-auto w-full max-w-md rounded-[1.35rem] border border-ff-glow/22 bg-ff-void/92 px-2.5 py-2.5 ff-shadow-bar backdrop-blur-xl backdrop-saturate-150 sm:px-3"
+          className="pointer-events-auto w-full max-w-md rounded-[1.7rem] border border-ff-glow/22 bg-ff-void/92 px-2 py-2 ff-shadow-bar backdrop-blur-xl backdrop-saturate-150 transform-gpu sm:px-2.5"
           initial={undefined}
           animate={undefined}
           aria-label="Quick actions"
@@ -241,10 +250,22 @@ export function StickyBar({ settings }: Props) {
             >
               {bookNode}
             </motion.div>
+            <motion.a
+              href={eventHref}
+              {...(eventHref.startsWith("http")
+                ? { target: "_blank" as const, rel: "noopener noreferrer" }
+                : {})}
+              className="inline-flex min-h-[42px] shrink-0 items-center justify-center rounded-full border border-ff-violet/40 bg-gradient-to-r from-ff-violet/65 to-[#3f39b5] px-3 text-[13px] font-semibold leading-tight text-white ff-shadow-soft transition-colors hover:border-ff-violet/60 hover:brightness-110 sm:px-3.5"
+              whileHover={hover}
+              whileTap={tap}
+              transition={spring}
+            >
+              Book event
+            </motion.a>
             <motion.button
               type="button"
               onClick={() => setSheetOpen(true)}
-              className="inline-flex min-h-[48px] shrink-0 items-center justify-center rounded-xl border border-ff-mint/28 bg-ff-deep/90 px-3 text-[13px] font-semibold leading-tight text-ff-glow ff-shadow-soft transition-colors hover:border-ff-glow/35 hover:bg-ff-forest/90 sm:px-4 sm:text-sm"
+              className="inline-flex min-h-[42px] shrink-0 items-center justify-center rounded-full border border-ff-mint/45 bg-gradient-to-r from-[#0f3a2d] to-[#14503f] px-3 text-[13px] font-semibold leading-tight text-ff-mint ff-shadow-soft transition-colors hover:border-ff-mint/70 hover:brightness-110 sm:px-3.5"
               whileHover={hover}
               whileTap={tap}
               transition={spring}

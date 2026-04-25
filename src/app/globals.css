@@ -46,6 +46,8 @@
 html {
   scroll-behavior: auto;
   overflow-anchor: none;
+  overflow-x: hidden;
+  overscroll-behavior: none;
   /* Matches theme-color + body: notch / island / overscroll use hero void, not flat black */
   background-color: var(--color-ff-hero-void);
   /* Hide native vertical scrollbar overlay (thin line while scrolling on mobile / WebKit). */
@@ -142,6 +144,8 @@ html::-webkit-scrollbar {
 
 body {
   overflow-anchor: none;
+  overflow-x: hidden;
+  overscroll-behavior: none;
   scrollbar-width: none;
   -ms-overflow-style: none;
   background: radial-gradient(ellipse 120% 80% at 50% -20%, rgba(124, 245, 198, 0.08), transparent),
