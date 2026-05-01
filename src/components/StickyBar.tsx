@@ -255,6 +255,12 @@ export function StickyBar({ settings }: Props) {
               {...(eventHref.startsWith("http")
                 ? { target: "_blank" as const, rel: "noopener noreferrer" }
                 : {})}
+              onClick={() =>
+                trackEvent({
+                  eventType: eventHref.startsWith("http") ? "WHATSAPP_CLICK" : "BOOKING_CLICK",
+                  source: "sticky_bar_book_event",
+                })
+              }
               className="inline-flex min-h-[42px] shrink-0 items-center justify-center rounded-full border border-ff-violet/40 bg-gradient-to-r from-ff-violet/65 to-[#3f39b5] px-3 text-[13px] font-semibold leading-tight text-white ff-shadow-soft transition-colors hover:border-ff-violet/60 hover:brightness-110 sm:px-3.5"
               whileHover={hover}
               whileTap={tap}

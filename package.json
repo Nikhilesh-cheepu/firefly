@@ -9,6 +9,7 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "db:push": "tsx scripts/prisma-runner.ts db push",
+    "db:migrate-deploy": "tsx scripts/prisma-runner.ts migrate deploy",
     "db:migrate": "tsx scripts/prisma-runner.ts migrate dev",
     "db:studio": "tsx scripts/prisma-runner.ts studio",
     "db:seed": "tsx scripts/prisma-runner.ts db seed"

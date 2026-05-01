@@ -21,6 +21,7 @@ function getSessionId(): string {
 
 export function trackEvent(payload: TrackPayload): void {
   if (typeof window === "undefined") return;
+  const url = `${window.location.origin}/api/track`;
   const body = JSON.stringify({
     eventType: payload.eventType,
     source: payload.source ?? "unknown",
@@ -31,15 +32,15 @@ export function trackEvent(payload: TrackPayload): void {
 
   try {
     if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
-      const blob = new Blob([body], { type: "application/json" });
-      const ok = navigator.sendBeacon("/api/track", blob);
+      const blob = new Blob([body], { type: "application/json;charset=UTF-8" });
+      const ok = navigator.sendBeacon(url, blob);
       if (ok) return;
     }
   } catch {
     // Fall through to fetch.
   }
 
-  void fetch("/api/track", {
+  void fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body,
