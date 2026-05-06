@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useId, useMemo } from "react";
 import type { HappyHourGroup } from "@/data/dummy-menu";
+import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
 
 export type MenuSheetKind = "food" | "bar" | "happy" | "cart";
@@ -70,6 +71,7 @@ export function MenuTopSheet({
 }: Props) {
   const reduce = useHydrationSafeReducedMotion();
   const open = active !== null;
+  useBodyScrollLock(open);
   const titleId = useId();
   const cartQtyById = useMemo(() => {
     const map = new Map<string, number>();
@@ -83,11 +85,8 @@ export function MenuTopSheet({
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
     };
   }, [open, onClose]);
 

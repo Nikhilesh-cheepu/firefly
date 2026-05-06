@@ -3,6 +3,7 @@
 import type { GalleryImage } from "@prisma/client";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
+import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
 
 type Props = {
@@ -35,8 +36,11 @@ function bentoCellClass(i: number): string {
 export function GalleryMasonryClient({ images }: Props) {
   const reduce = useHydrationSafeReducedMotion();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const lightboxOpen = openIndex !== null;
 
   const close = useCallback(() => setOpenIndex(null), []);
+
+  useBodyScrollLock(lightboxOpen);
 
   useEffect(() => {
     if (openIndex === null) return;
@@ -46,11 +50,8 @@ export function GalleryMasonryClient({ images }: Props) {
       if (e.key === "ArrowRight" && openIndex < images.length - 1) setOpenIndex(openIndex + 1);
     };
     window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
     };
   }, [openIndex, close, images.length]);
 

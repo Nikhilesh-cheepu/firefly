@@ -1,10 +1,11 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, usePresence } from "framer-motion";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { telHrefFromInput, waMeHrefFromInput } from "@/lib/indian-phone";
+import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
 import type { SiteSettingsDTO } from "@/lib/site-data";
 import { trackEvent } from "@/lib/track-client";
@@ -89,6 +90,100 @@ type SheetAction = {
   icon: ReactNode;
 };
 
+function StickyContactSheetOverlay({
+  closeSheet,
+  reduce,
+  sheetActions,
+  sheetTransition,
+}: {
+  closeSheet: () => void;
+  reduce: boolean;
+  sheetActions: SheetAction[];
+  sheetTransition: { duration: number } | { type: "spring"; stiffness: number; damping: number };
+}) {
+  const [isPresent] = usePresence();
+  const blockExitPointer = !isPresent;
+  return (
+    <motion.div
+      className="fixed inset-0 z-[60] flex items-end justify-center sm:items-end"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+    >
+      <button
+        type="button"
+        className={
+          "absolute inset-0 bg-black/55 backdrop-blur-[2px] " +
+          (blockExitPointer ? "pointer-events-none" : "")
+        }
+        aria-label="Close Contact us"
+        onClick={closeSheet}
+      />
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="contact-sheet-title"
+        className={
+          "relative z-10 w-full max-w-md rounded-t-2xl border border-ff-glow/20 border-b-0 bg-ff-void/98 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 ff-shadow-bar backdrop-blur-xl " +
+          (blockExitPointer ? "pointer-events-none" : "pointer-events-auto")
+        }
+        initial={reduce ? { y: "100%" } : { y: "105%" }}
+        animate={{ y: 0 }}
+        exit={reduce ? { y: "100%" } : { y: "105%" }}
+        transition={sheetTransition}
+      >
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-ff-mist/25" aria-hidden />
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 id="contact-sheet-title" className="text-lg font-semibold text-white">
+            Contact us
+          </h2>
+          <button
+            type="button"
+            onClick={closeSheet}
+            className="rounded-lg px-3 py-1.5 text-sm font-medium text-ff-mist transition hover:bg-white/5 hover:text-ff-glow"
+          >
+            Close
+          </button>
+        </div>
+        {sheetActions.length === 0 ? (
+          <p className="pb-4 text-center text-sm leading-relaxed text-ff-mist/85">
+            For reservations, use <span className="text-ff-mint">Book table</span>. Other ways to reach us will
+            be added here soon.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2 pb-1">
+            {sheetActions.map((a) => (
+              <li key={a.key}>
+                <motion.a
+                  href={a.href}
+                  {...(a.external ? { target: "_blank" as const, rel: "noopener noreferrer" } : {})}
+                  onClick={() => {
+                    if (a.key === "phone") {
+                      trackEvent({ eventType: "CALL_CLICK", source: "sticky_contact_sheet" });
+                    } else if (a.key === "wa") {
+                      trackEvent({ eventType: "WHATSAPP_CLICK", source: "sticky_contact_sheet" });
+                    } else if (a.key === "map") {
+                      trackEvent({ eventType: "LOCATION_CLICK", source: "sticky_contact_sheet" });
+                    }
+                  }}
+                  className="flex min-h-[52px] items-center gap-3 rounded-xl border border-ff-glow/15 bg-ff-deep/80 px-4 py-3 text-left text-base font-medium text-ff-mist transition hover:border-ff-glow/30 hover:bg-ff-forest/50 hover:text-white"
+                  whileTap={reduce ? undefined : { scale: 0.99 }}
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-ff-void/80">
+                    {a.icon}
+                  </span>
+                  {a.label}
+                </motion.a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </motion.div>
+    </motion.div>
+  );
+}
+
 function buildSheetActions(settings: SiteSettingsDTO): SheetAction[] {
   const tel = telHrefFromInput(settings.phone);
   const wa = waMeHrefFromInput(settings.whatsapp);
@@ -151,17 +246,16 @@ export function StickyBar({ settings }: Props) {
 
   const closeSheet = useCallback(() => setSheetOpen(false), []);
 
+  useBodyScrollLock(sheetOpen);
+
   useEffect(() => {
     if (!sheetOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") closeSheet();
     };
     window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
     };
   }, [sheetOpen, closeSheet]);
 
@@ -287,79 +381,12 @@ export function StickyBar({ settings }: Props) {
 
       <AnimatePresence>
         {sheetOpen && (
-          <motion.div
-            className="fixed inset-0 z-[60] flex items-end justify-center sm:items-end"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <button
-              type="button"
-              className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
-              aria-label="Close Contact us"
-              onClick={closeSheet}
-            />
-            <motion.div
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="contact-sheet-title"
-              className="relative z-10 w-full max-w-md rounded-t-2xl border border-ff-glow/20 border-b-0 bg-ff-void/98 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 ff-shadow-bar backdrop-blur-xl"
-              initial={reduce ? { y: "100%" } : { y: "105%" }}
-              animate={{ y: 0 }}
-              exit={reduce ? { y: "100%" } : { y: "105%" }}
-              transition={sheetTransition}
-            >
-              <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-ff-mist/25" aria-hidden />
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <h2 id="contact-sheet-title" className="text-lg font-semibold text-white">
-                  Contact us
-                </h2>
-                <button
-                  type="button"
-                  onClick={closeSheet}
-                  className="rounded-lg px-3 py-1.5 text-sm font-medium text-ff-mist transition hover:bg-white/5 hover:text-ff-glow"
-                >
-                  Close
-                </button>
-              </div>
-              {sheetActions.length === 0 ? (
-                <p className="pb-4 text-center text-sm leading-relaxed text-ff-mist/85">
-                  For reservations, use <span className="text-ff-mint">Book table</span>. Other ways to reach us
-                  will be added here soon.
-                </p>
-              ) : (
-                <ul className="flex flex-col gap-2 pb-1">
-                  {sheetActions.map((a) => (
-                    <li key={a.key}>
-                      <motion.a
-                        href={a.href}
-                        {...(a.external
-                          ? { target: "_blank" as const, rel: "noopener noreferrer" }
-                          : {})}
-                        onClick={() => {
-                          if (a.key === "phone") {
-                            trackEvent({ eventType: "CALL_CLICK", source: "sticky_contact_sheet" });
-                          } else if (a.key === "wa") {
-                            trackEvent({ eventType: "WHATSAPP_CLICK", source: "sticky_contact_sheet" });
-                          } else if (a.key === "map") {
-                            trackEvent({ eventType: "LOCATION_CLICK", source: "sticky_contact_sheet" });
-                          }
-                        }}
-                        className="flex min-h-[52px] items-center gap-3 rounded-xl border border-ff-glow/15 bg-ff-deep/80 px-4 py-3 text-left text-base font-medium text-ff-mist transition hover:border-ff-glow/30 hover:bg-ff-forest/50 hover:text-white"
-                        whileTap={reduce ? undefined : { scale: 0.99 }}
-                      >
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-ff-void/80">
-                          {a.icon}
-                        </span>
-                        {a.label}
-                      </motion.a>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </motion.div>
-          </motion.div>
+          <StickyContactSheetOverlay
+            closeSheet={closeSheet}
+            reduce={reduce}
+            sheetActions={sheetActions}
+            sheetTransition={sheetTransition}
+          />
         )}
       </AnimatePresence>
     </>
