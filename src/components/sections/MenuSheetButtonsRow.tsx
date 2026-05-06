@@ -1,11 +1,12 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useMenuSheets } from "@/components/menu/MenuSheetsProvider";
+import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
 
 export function MenuSheetButtonsRow() {
   const { openFoodMenu, openBarMenu, openHappyHours } = useMenuSheets();
-  const reduce = useReducedMotion();
+  const reduce = useHydrationSafeReducedMotion();
 
   const btn =
     "inline-flex min-h-[44px] min-w-0 flex-1 items-center justify-center rounded-xl border border-ff-mint/35 bg-ff-deep/80 px-3 text-sm font-semibold text-ff-glow transition hover:border-ff-glow/40 hover:bg-ff-forest/60 sm:px-4";

@@ -1,9 +1,10 @@
 "use client";
 
 import type { GalleryImage } from "@prisma/client";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
 
 type Props = {
   images: GalleryImage[];
@@ -14,7 +15,7 @@ function toPct(value: number) {
 }
 
 export function GalleryFloatingPreviewClient({ images }: Props) {
-  const reduce = useReducedMotion();
+  const reduce = useHydrationSafeReducedMotion();
   const limited = images.slice(0, 14);
   const [centerIndex, setCenterIndex] = useState(0);
 

@@ -1,8 +1,9 @@
 "use client";
 
 import type { GalleryImage } from "@prisma/client";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
+import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
 
 type Props = {
   images: GalleryImage[];
@@ -32,7 +33,7 @@ function bentoCellClass(i: number): string {
 }
 
 export function GalleryMasonryClient({ images }: Props) {
-  const reduce = useReducedMotion();
+  const reduce = useHydrationSafeReducedMotion();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const close = useCallback(() => setOpenIndex(null), []);

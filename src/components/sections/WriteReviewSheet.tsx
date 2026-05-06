@@ -1,8 +1,9 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useState, useTransition, type FormEvent } from "react";
 import { submitGuestReview } from "@/app/reviews/actions";
+import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
 
 const sheetTransition = { type: "spring" as const, stiffness: 420, damping: 38, mass: 0.9 };
 
@@ -11,7 +12,7 @@ type Props = {
 };
 
 export function WriteReviewSheet({ canSubmitReview }: Props) {
-  const reduce = useReducedMotion();
+  const reduce = useHydrationSafeReducedMotion();
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState(5);
   const [authorName, setAuthorName] = useState("");

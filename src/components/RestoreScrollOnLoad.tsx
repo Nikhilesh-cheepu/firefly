@@ -50,12 +50,8 @@ export function RestoreScrollOnLoad() {
 
     window.addEventListener("pageshow", onPageShow);
 
-    const delays = [0, 50, 150, 400, 800, 1600];
-    const timers = delays.map((ms) => window.setTimeout(hardScrollTop, ms));
-
     return () => {
       window.removeEventListener("pageshow", onPageShow);
-      timers.forEach(clearTimeout);
     };
   }, []);
 

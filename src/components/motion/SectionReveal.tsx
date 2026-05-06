@@ -1,7 +1,8 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import type { ReactNode } from "react";
+import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
 
 type Props = {
   id?: string;
@@ -12,7 +13,7 @@ type Props = {
 };
 
 export function SectionReveal({ id, className, children, delay = 0 }: Props) {
-  const reduce = useReducedMotion();
+  const reduce = useHydrationSafeReducedMotion();
 
   return (
     <motion.section

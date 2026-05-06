@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
 
 type Props = {
   className: string;
@@ -8,7 +9,7 @@ type Props = {
 
 /** Soft fade-in for gradient bridges between major sections. */
 export function BridgeReveal({ className }: Props) {
-  const reduce = useReducedMotion();
+  const reduce = useHydrationSafeReducedMotion();
 
   return (
     <motion.div

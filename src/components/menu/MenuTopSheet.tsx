@@ -1,8 +1,9 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useId, useMemo } from "react";
 import type { HappyHourGroup } from "@/data/dummy-menu";
+import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
 
 export type MenuSheetKind = "food" | "bar" | "happy" | "cart";
 
@@ -67,7 +68,7 @@ export function MenuTopSheet({
   checkoutError,
   happyHourGroups,
 }: Props) {
-  const reduce = useReducedMotion();
+  const reduce = useHydrationSafeReducedMotion();
   const open = active !== null;
   const titleId = useId();
   const cartQtyById = useMemo(() => {

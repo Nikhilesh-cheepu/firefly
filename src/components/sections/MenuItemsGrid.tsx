@@ -1,7 +1,8 @@
 "use client";
 
 import type { MenuCategory, MenuItem } from "@prisma/client";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
 
 type CategoryWithItems = MenuCategory & { items: MenuItem[] };
 
@@ -10,7 +11,7 @@ type Props = {
 };
 
 export function MenuItemsGrid({ categories }: Props) {
-  const reduce = useReducedMotion();
+  const reduce = useHydrationSafeReducedMotion();
   let index = 0;
 
   return (

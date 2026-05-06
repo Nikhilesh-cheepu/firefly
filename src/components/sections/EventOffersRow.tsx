@@ -1,7 +1,8 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import type { BassikOffer } from "@/lib/bassik";
+import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
 
 type Props = {
   offers: BassikOffer[];
@@ -21,7 +22,7 @@ function formatOfferDate(iso: string | null) {
 }
 
 export function EventOffersRow({ offers }: Props) {
-  const reduce = useReducedMotion();
+  const reduce = useHydrationSafeReducedMotion();
 
   return (
     <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 pl-0.5 pr-0.5 pt-0.5 [-ms-overflow-style:none] [scrollbar-width:none] md:gap-5 md:pb-2 [&::-webkit-scrollbar]:hidden">

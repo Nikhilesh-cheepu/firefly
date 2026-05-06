@@ -1,10 +1,11 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { telHrefFromInput, waMeHrefFromInput } from "@/lib/indian-phone";
+import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
 import type { SiteSettingsDTO } from "@/lib/site-data";
 import { trackEvent } from "@/lib/track-client";
 
@@ -143,7 +144,7 @@ function buildSheetActions(settings: SiteSettingsDTO): SheetAction[] {
 }
 
 export function StickyBar({ settings }: Props) {
-  const reduce = useReducedMotion();
+  const reduce = useHydrationSafeReducedMotion();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const sheetActions = useMemo(() => buildSheetActions(settings), [settings]);

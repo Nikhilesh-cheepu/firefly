@@ -1,7 +1,8 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import type { DisplayGuestReview } from "@/lib/guest-reviews";
+import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
 
 type Props = {
   reviews: DisplayGuestReview[];
@@ -22,7 +23,7 @@ function StarRow({ rating }: { rating: number }) {
 }
 
 export function ReviewsMarqueeClient({ reviews }: Props) {
-  const reduce = useReducedMotion();
+  const reduce = useHydrationSafeReducedMotion();
   const loop = [...reviews, ...reviews];
 
   if (reduce) {

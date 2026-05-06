@@ -1,8 +1,9 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { formatISTDateLong, istYmd } from "@/lib/ist-datetime";
+import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
 
 type Props = {
   value: string;
@@ -64,7 +65,7 @@ function IconChevronDown({ className, open }: { className?: string; open?: boole
 }
 
 export function BookingDatePicker({ value, onChange, minYmd, maxYmd }: Props) {
-  const reduce = useReducedMotion();
+  const reduce = useHydrationSafeReducedMotion();
   const rootRef = useRef<HTMLDivElement>(null);
   const id = useId();
   const [open, setOpen] = useState(false);

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { submitTableBooking } from "@/app/book/actions";
@@ -10,6 +10,7 @@ import { BookingDatePicker } from "@/components/booking/BookingDatePicker";
 import { bookNowClayClassName, clayPillMutedClassName, ClayPillLabel } from "@/components/BookNowClayButton";
 import { addDaysISTYmd, istNowMinutesFromMidnight, istYmd } from "@/lib/ist-datetime";
 import { trackEvent } from "@/lib/track-client";
+import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
 
 type Props = {
   whatsappRaw: string | null;
@@ -60,7 +61,7 @@ function isSlotInPastForSelectedDate(iso: string, meta: BookingSlotMeta, nowMin:
 }
 
 export function BookTableClient({ whatsappRaw }: Props) {
-  const reduce = useReducedMotion();
+  const reduce = useHydrationSafeReducedMotion();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [date, setDate] = useState(() => istYmd());
