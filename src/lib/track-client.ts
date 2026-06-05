@@ -10,6 +10,11 @@ type TrackPayload = {
 
 const SESSION_KEY = "firefly_analytics_sid";
 
+/** Shared session id for analytics + host-chat lead deduping. */
+export function getAnalyticsSessionId(): string {
+  return getSessionId();
+}
+
 function getSessionId(): string {
   if (typeof window === "undefined") return "server";
   const existing = window.sessionStorage.getItem(SESSION_KEY);

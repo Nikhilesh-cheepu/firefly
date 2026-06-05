@@ -18,7 +18,8 @@ import {
 } from "@/lib/host-chat-logic";
 import { telHrefFromInput, waMeHrefFromInput } from "@/lib/indian-phone";
 import type { SiteSettingsDTO } from "@/lib/site-data";
-import { trackEvent } from "@/lib/track-client";
+import { saveHostChatLead } from "@/app/host-chat/actions";
+import { getAnalyticsSessionId, trackEvent } from "@/lib/track-client";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 
 type Props = {
@@ -147,6 +148,12 @@ export function FireflyHostChat({ settings, offers }: Props) {
       const contact = parseGuestContact(text);
       if (contact) {
         setBookingFlow("done");
+        void saveHostChatLead({
+          guestName: contact.name,
+          phone: contact.phone,
+          source: "host_chat_book_table",
+          sessionId: getAnalyticsSessionId(),
+        });
         const reply = bookingLinkHostReply(contact.name, resolvedBookUrl);
         await replyAsHost(reply, 420);
         trackEvent({
