@@ -4,6 +4,7 @@ import { Bebas_Neue, DM_Sans, Geist_Mono, Manrope } from "next/font/google";
 import Script from "next/script";
 import { FacebookPixelHead } from "@/components/FacebookPixel";
 import { FacebookPixelPageView } from "@/components/FacebookPixelPageView";
+import { FireflyHostChatRoot } from "@/components/host/FireflyHostChatRoot";
 import { RestoreScrollOnLoad } from "@/components/RestoreScrollOnLoad";
 import "./globals.css";
 
@@ -64,7 +65,7 @@ export const viewport: Viewport = {
   themeColor: BRAND_CHROME,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -84,6 +85,7 @@ export default function RootLayout({
         <RestoreScrollOnLoad />
         <FacebookPixelPageView />
         {children}
+        <FireflyHostChatRoot />
         <Analytics />
       </body>
     </html>
