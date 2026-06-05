@@ -2,24 +2,41 @@ import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
 import { verifyAdminCookie } from "@/lib/admin-auth";
 
+export const runtime = "nodejs";
+export const maxDuration = 120;
+
 const ALLOWED = [
   "image/jpeg",
+  "image/jpg",
   "image/png",
   "image/webp",
   "image/gif",
+  "image/heic",
+  "image/heif",
   "video/mp4",
   "video/webm",
   "video/quicktime",
+  "video/x-m4v",
+  "application/octet-stream",
 ] as const;
+
+function isAllowedUploadPath(pathname: string): boolean {
+  return (
+    pathname.startsWith("hero/") ||
+    pathname.startsWith("gallery/") ||
+    pathname.startsWith("hero%2F") ||
+    pathname.startsWith("gallery%2F")
+  );
+}
 
 export async function POST(request: Request): Promise<NextResponse> {
   if (!(await verifyAdminCookie())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized — log in again." }, { status: 401 });
   }
 
   if (!process.env.BLOB_READ_WRITE_TOKEN?.trim()) {
     return NextResponse.json(
-      { error: "BLOB_READ_WRITE_TOKEN is not configured" },
+      { error: "BLOB_READ_WRITE_TOKEN is not configured on this deployment." },
       { status: 503 },
     );
   }
@@ -36,8 +53,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       body,
       request,
       onBeforeGenerateToken: async (pathname) => {
-        if (!pathname.startsWith("hero/") && !pathname.startsWith("gallery/")) {
-          throw new Error("Invalid upload path");
+        if (!isAllowedUploadPath(pathname)) {
+          throw new Error(`Invalid upload path: ${pathname.slice(0, 80)}`);
         }
         return {
           allowedContentTypes: [...ALLOWED],
@@ -49,6 +66,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json(result);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Upload failed";
+    console.error("[api/admin/blob]", message);
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

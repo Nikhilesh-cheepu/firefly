@@ -1,11 +1,18 @@
 import { updateSiteSettings } from "@/app/admin/settings/actions";
+import { AdminDbError } from "@/components/admin/AdminDbError";
 import { getPrisma } from "@/lib/db";
+import type { SiteSettings } from "@prisma/client";
 
 export default async function AdminSettingsPage() {
   const prisma = getPrisma();
-  const row = prisma
-    ? ((await prisma.siteSettings.findUnique({ where: { id: "default" } })) ?? null)
-    : null;
+  let row: SiteSettings | null = null;
+  if (prisma) {
+    try {
+      row = (await prisma.siteSettings.findUnique({ where: { id: "default" } })) ?? null;
+    } catch {
+      return <AdminDbError title="Could not load site settings from the database." />;
+    }
+  }
 
   if (!prisma) {
     return (

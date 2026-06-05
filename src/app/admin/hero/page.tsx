@@ -1,6 +1,8 @@
 import { deleteHeroSlide, moveHeroSlide } from "@/app/admin/hero/actions";
+import { AdminDbError } from "@/components/admin/AdminDbError";
 import { HeroSlideAddForm } from "@/components/admin/HeroSlideAddForm";
 import { getPrisma } from "@/lib/db";
+import type { HeroSlide } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +22,14 @@ export default async function AdminHeroPage() {
     );
   }
 
-  const slides = await prisma.heroSlide.findMany({ orderBy: { sortOrder: "asc" } });
+  let slides: HeroSlide[] = [];
+  try {
+    slides = await prisma.heroSlide.findMany({ orderBy: { sortOrder: "asc" } });
+  } catch {
+    return (
+      <AdminDbError title="Could not load hero slides from the database." />
+    );
+  }
 
   return (
     <div>

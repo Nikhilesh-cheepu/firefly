@@ -19,6 +19,14 @@ export async function assertAdminSession(): Promise<void> {
   }
 }
 
+/** For client-called actions that return `{ ok, error }` — never redirect. */
+export async function ensureAdminSession(): Promise<string | null> {
+  if (!(await verifyAdminCookie())) {
+    return "Session expired. Please log in again.";
+  }
+  return null;
+}
+
 export function getAdminJwtSecret(): string {
   const s = process.env.ADMIN_SESSION_SECRET?.trim() || process.env.ADMIN_PASSWORD?.trim();
   if (!s) {

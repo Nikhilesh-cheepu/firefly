@@ -1,6 +1,8 @@
 import { GalleryGridManager } from "@/components/admin/GalleryGridManager";
 import { GalleryUploadForm } from "@/components/admin/GalleryUploadForm";
+import { AdminDbError } from "@/components/admin/AdminDbError";
 import { getPrisma } from "@/lib/db";
+import type { GalleryImage } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +22,12 @@ export default async function AdminGalleryPage() {
     );
   }
 
-  const images = await prisma.galleryImage.findMany({ orderBy: { sortOrder: "asc" } });
+  let images: GalleryImage[] = [];
+  try {
+    images = await prisma.galleryImage.findMany({ orderBy: { sortOrder: "asc" } });
+  } catch {
+    return <AdminDbError title="Could not load gallery images from the database." />;
+  }
 
   return (
     <div>

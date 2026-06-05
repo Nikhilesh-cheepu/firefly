@@ -4,16 +4,30 @@ import { upload } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState, type ChangeEvent } from "react";
 import { addHeroSlideFromUpload } from "@/app/admin/hero/actions";
+import { formatUploadError } from "@/lib/format-upload-error";
+import { compressImageToMaxBytes } from "@/lib/compressImageClient";
+import { isNextRedirect } from "@/lib/is-next-redirect";
+
+const MAX_STORED = 5 * 1024 * 1024;
+const MULTIPART_THRESHOLD = 4.5 * 1024 * 1024;
 
 function safeBlobPath(file: File) {
   const base = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 96);
-  return `hero/slide/${Date.now()}-${base || "upload"}`;
+  return `hero/${Date.now()}-${base || "upload"}`;
 }
 
 function inferSlideType(file: File): "IMAGE" | "VIDEO" | null {
   if (file.type.startsWith("video/")) return "VIDEO";
   if (file.type.startsWith("image/")) return "IMAGE";
+  const lower = file.name.toLowerCase();
+  if (/\.(mp4|webm|mov|m4v)$/i.test(lower)) return "VIDEO";
+  if (/\.(jpe?g|png|webp|gif|heic|heif)$/i.test(lower)) return "IMAGE";
   return null;
+}
+
+function blobUploadUrl(): string {
+  if (typeof window === "undefined") return "/api/admin/blob";
+  return `${window.location.origin}/api/admin/blob`;
 }
 
 export function HeroSlideAddForm() {
@@ -38,10 +52,20 @@ export function HeroSlideAddForm() {
 
       setBusy(true);
       try {
-        const multipart = file.size > 4 * 1024 * 1024 || slideType === "VIDEO";
-        const { url } = await upload(safeBlobPath(file), file, {
+        let toUpload = file;
+        if (slideType === "IMAGE" && file.size > MAX_STORED) {
+          toUpload = await compressImageToMaxBytes(file, MAX_STORED);
+        }
+        if (slideType === "IMAGE" && toUpload.size > MAX_STORED) {
+          setError("Image is still too large after compression. Try a smaller file.");
+          return;
+        }
+
+        const multipart = toUpload.size > MULTIPART_THRESHOLD;
+        const { url } = await upload(safeBlobPath(toUpload), toUpload, {
           access: "public",
-          handleUploadUrl: "/api/admin/blob",
+          handleUploadUrl: blobUploadUrl(),
+          contentType: toUpload.type || undefined,
           multipart,
           onUploadProgress: ({ percentage }) => setProgress(percentage),
         });
@@ -55,7 +79,11 @@ export function HeroSlideAddForm() {
         router.refresh();
         if (inputRef.current) inputRef.current.value = "";
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Upload failed. Check Blob token and try again.");
+        if (isNextRedirect(e)) {
+          window.location.href = "/admin/login";
+          return;
+        }
+        setError(formatUploadError(e));
       } finally {
         setBusy(false);
         setProgress(null);
@@ -91,6 +119,11 @@ export function HeroSlideAddForm() {
           {error}
         </div>
       )}
+
+      <p className="mb-3 text-xs leading-relaxed text-ff-mist/70">
+        Images over 5MB are compressed in the browser before upload. Large videos use multipart upload.
+        Requires <code className="text-ff-mint/90">BLOB_READ_WRITE_TOKEN</code> on your host.
+      </p>
 
       <button
         type="button"

@@ -5,12 +5,21 @@ import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState, type ChangeEvent } from "react";
 import { addGalleryImageFromUpload } from "@/app/admin/gallery/actions";
 import { compressImageToMaxBytes } from "@/lib/compressImageClient";
+import { formatUploadError } from "@/lib/format-upload-error";
+import { isNextRedirect } from "@/lib/is-next-redirect";
 
 const MAX_STORED = 5 * 1024 * 1024;
+
+const MULTIPART_THRESHOLD = 4.5 * 1024 * 1024;
 
 function safeBlobPath(file: File) {
   const base = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 96);
   return `gallery/${Date.now()}-${base || "upload"}`;
+}
+
+function blobUploadUrl(): string {
+  if (typeof window === "undefined") return "/api/admin/blob";
+  return `${window.location.origin}/api/admin/blob`;
 }
 
 export function GalleryUploadForm() {
@@ -46,10 +55,11 @@ export function GalleryUploadForm() {
             continue;
           }
 
-          const multipart = toUpload.size > 4 * 1024 * 1024;
+          const multipart = toUpload.size > MULTIPART_THRESHOLD;
           const { url } = await upload(safeBlobPath(toUpload), toUpload, {
             access: "public",
-            handleUploadUrl: "/api/admin/blob",
+            handleUploadUrl: blobUploadUrl(),
+            contentType: toUpload.type || undefined,
             multipart,
             onUploadProgress: ({ percentage }) => {
               const filePart = percentage / files.length;
@@ -69,7 +79,11 @@ export function GalleryUploadForm() {
         }
         if (inputRef.current) inputRef.current.value = "";
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Upload failed. Check Blob token and try again.");
+        if (isNextRedirect(e)) {
+          window.location.href = "/admin/login";
+          return;
+        }
+        setError(formatUploadError(e));
       } finally {
         setBusy(false);
         setProgress(null);
