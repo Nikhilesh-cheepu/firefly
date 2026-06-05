@@ -255,7 +255,7 @@ export function FireflyHostChat({ settings, offers }: Props) {
             <p className="mt-2 text-sm leading-relaxed text-ff-mist/85">{defaultHostGreeting()}</p>
 
             <p className="mt-5 text-xs text-ff-mist/65">
-              Need something fast? Tap below — call, directions, menu, prizes, or book a table.
+              Need something fast? Tap below — call, directions, explore, menu, prizes, or book a table.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {tel ? (
@@ -285,6 +285,9 @@ export function FireflyHostChat({ settings, offers }: Props) {
                   Directions
                 </a>
               ) : null}
+              <Link href="/#events" className={quickPill} onClick={() => setOpen(false)}>
+                Explore the website
+              </Link>
               <Link href="/#menu" className={quickPill} onClick={() => setOpen(false)}>
                 View menu
               </Link>
