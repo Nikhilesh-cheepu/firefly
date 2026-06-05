@@ -110,15 +110,3 @@ model AnalyticsEvent {
   @@index([createdAt])
   @@index([eventType, createdAt])
 }
-
-// Name + phone captured in the host chat (e.g. book-table flow).
-model HostChatLead {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  guestName String
-  phone     String
-  source    String?
-  sessionId String?
-
-  @@index([createdAt])
-}
