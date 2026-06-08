@@ -58,9 +58,13 @@ export default async function Home() {
 
   const foodItems = FOOD_MENU_ITEMS;
   const beverageItems = BAR_MENU_ITEMS;
+  const heroHasVideo =
+    heroSlides.length > 0
+      ? heroSlides[0]!.type === "VIDEO"
+      : Boolean(settings.heroVideoUrl);
 
   return (
-    <HeroVideoControlProvider>
+    <HeroVideoControlProvider heroHasVideo={heroHasVideo}>
     <MenuSheetsProvider
       happyHourGroups={DUMMY_HAPPY_HOURS}
       foodItems={foodItems}
@@ -95,7 +99,7 @@ export default async function Home() {
           © {new Date().getFullYear()} Firefly · Telugu club
         </FooterReveal>
       </main>
-      <StickyBar settings={settings} />
+      <StickyBar settings={settings} heroHasVideo={heroHasVideo} />
     </MenuSheetsProvider>
     </HeroVideoControlProvider>
   );

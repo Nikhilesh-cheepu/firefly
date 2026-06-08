@@ -18,8 +18,14 @@ type HeroVideoControlValue = {
 
 const HeroVideoControlContext = createContext<HeroVideoControlValue | null>(null);
 
-export function HeroVideoControlProvider({ children }: { children: ReactNode }) {
-  const [isVideoHero, setIsVideoHero] = useState(false);
+export function HeroVideoControlProvider({
+  children,
+  heroHasVideo = false,
+}: {
+  children: ReactNode;
+  heroHasVideo?: boolean;
+}) {
+  const [isVideoHero, setIsVideoHero] = useState(heroHasVideo);
   const [muted, setMuted] = useState(true);
   const toggleMuted = useCallback(() => setMuted((prev) => !prev), []);
 

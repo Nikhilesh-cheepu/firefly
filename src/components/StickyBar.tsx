@@ -14,6 +14,7 @@ import { trackEvent } from "@/lib/track-client";
 
 type Props = {
   settings: SiteSettingsDTO;
+  heroHasVideo?: boolean;
 };
 
 const spring = { type: "spring" as const, stiffness: 400, damping: 26 };
@@ -240,9 +241,12 @@ function buildSheetActions(settings: SiteSettingsDTO): SheetAction[] {
   return rows;
 }
 
-export function StickyBar({ settings }: Props) {
+export function StickyBar({ settings, heroHasVideo = false }: Props) {
   const reduce = useHydrationSafeReducedMotion();
   const heroVideo = useHeroVideoControl();
+  const showHeroMute = heroHasVideo || Boolean(heroVideo?.isVideoHero);
+  const heroMuted = heroVideo?.muted ?? true;
+  const toggleHeroMuted = heroVideo?.toggleMuted;
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const sheetActions = useMemo(() => buildSheetActions(settings), [settings]);
@@ -371,35 +375,49 @@ export function StickyBar({ settings }: Props) {
             >
               Book event
             </motion.a>
-            <motion.button
-              type="button"
-              onClick={() => setSheetOpen(true)}
-              className={
-                compactActionClassName +
-                " border border-ff-mint/45 bg-gradient-to-r from-[#0f3a2d] to-[#14503f] text-ff-mint hover:border-ff-mint/70 hover:brightness-110"
-              }
-              whileHover={hover}
-              whileTap={tap}
-              transition={spring}
-              aria-haspopup="dialog"
-              aria-expanded={sheetOpen}
-            >
-              Contact us
-            </motion.button>
-            {heroVideo?.isVideoHero ? (
-              <motion.button
-                type="button"
-                onClick={heroVideo.toggleMuted}
-                aria-pressed={!heroVideo.muted}
-                aria-label={heroVideo.muted ? "Unmute hero video" : "Mute hero video"}
-                className="inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full border border-ff-glow/35 bg-[#071018]/95 text-ff-glow ff-shadow-soft backdrop-blur-sm transition-colors hover:border-ff-glow/55 hover:bg-[#0a1520]"
+            {showHeroMute ? (
+              <motion.div
+                className="inline-flex h-[42px] shrink-0 overflow-hidden rounded-full border border-ff-mint/45 bg-gradient-to-r from-[#0f3a2d] to-[#14503f] ff-shadow-soft"
                 whileHover={hover}
                 whileTap={tap}
                 transition={spring}
               >
-                <HeroMuteIcon muted={heroVideo.muted} />
+                <button
+                  type="button"
+                  onClick={() => setSheetOpen(true)}
+                  className="inline-flex h-full items-center px-2.5 text-[12px] font-semibold leading-tight text-ff-mint transition-colors hover:brightness-110 sm:px-3 sm:text-[13px]"
+                  aria-haspopup="dialog"
+                  aria-expanded={sheetOpen}
+                >
+                  Contact us
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleHeroMuted?.()}
+                  aria-pressed={!heroMuted}
+                  aria-label={heroMuted ? "Unmute hero video" : "Mute hero video"}
+                  className="inline-flex h-full w-[42px] shrink-0 items-center justify-center border-l border-ff-mint/25 bg-[#071018]/55 text-ff-glow transition-colors hover:bg-[#0a1520]/90 hover:text-ff-glow"
+                >
+                  <HeroMuteIcon muted={heroMuted} />
+                </button>
+              </motion.div>
+            ) : (
+              <motion.button
+                type="button"
+                onClick={() => setSheetOpen(true)}
+                className={
+                  compactActionClassName +
+                  " border border-ff-mint/45 bg-gradient-to-r from-[#0f3a2d] to-[#14503f] text-ff-mint hover:border-ff-mint/70 hover:brightness-110"
+                }
+                whileHover={hover}
+                whileTap={tap}
+                transition={spring}
+                aria-haspopup="dialog"
+                aria-expanded={sheetOpen}
+              >
+                Contact us
               </motion.button>
-            ) : null}
+            )}
           </div>
         </motion.nav>
       </div>
