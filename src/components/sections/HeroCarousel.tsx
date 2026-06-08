@@ -2,6 +2,7 @@
 
 import type { HeroSlide, HeroSlideType } from "@prisma/client";
 import { useMemo, useRef, useState } from "react";
+import { BassikMessageUsButton } from "@/components/BassikMessageUsButton";
 
 export type HeroCarouselProps = {
   slides: HeroSlide[];
@@ -72,9 +73,12 @@ export function HeroCarousel({
         aria-label="Firefly hero"
       >
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_25%,rgba(200,255,140,0.12),transparent_55%)]" />
-        <p className="relative z-10 max-w-md text-center text-sm text-ff-mist/90">
-          Add hero media in admin or set fallback hero media in settings.
-        </p>
+        <div className="relative z-10 flex flex-col items-center gap-5 px-4">
+          <p className="max-w-md text-center text-sm text-ff-mist/90">
+            Add hero media in admin or set fallback hero media in settings.
+          </p>
+          <BassikMessageUsButton source="home_hero_message_us" />
+        </div>
       </section>
     );
   }
@@ -106,6 +110,10 @@ export function HeroCarousel({
       )}
 
       <div className="absolute inset-0 bg-gradient-to-b from-[#03080f]/20 via-transparent to-[#03080f]/45" />
+
+      <div className="absolute bottom-[calc(7.25rem+env(safe-area-inset-bottom))] left-0 right-0 z-20 flex justify-center px-4">
+        <BassikMessageUsButton source="home_hero_message_us" />
+      </div>
 
       {isVideo ? (
         <div className="absolute bottom-[calc(6.25rem+env(safe-area-inset-bottom))] right-4 z-20 sm:right-6">
