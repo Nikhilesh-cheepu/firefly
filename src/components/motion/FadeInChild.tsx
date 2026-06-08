@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
+import { useMounted } from "@/lib/use-mounted";
 
 type Props = {
   children: ReactNode;
@@ -13,7 +14,12 @@ type Props = {
 };
 
 export function FadeInChild({ children, className, delay = 0, y = 18 }: Props) {
+  const mounted = useMounted();
   const reduce = useHydrationSafeReducedMotion();
+
+  if (!mounted || reduce) {
+    return <div className={className}>{children}</div>;
+  }
 
   return (
     <motion.div

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
+import { useMounted } from "@/lib/use-mounted";
 
 type Props = {
   id?: string;
@@ -13,7 +14,16 @@ type Props = {
 };
 
 export function SectionReveal({ id, className, children, delay = 0 }: Props) {
+  const mounted = useMounted();
   const reduce = useHydrationSafeReducedMotion();
+
+  if (!mounted || reduce) {
+    return (
+      <section id={id} className={className}>
+        {children}
+      </section>
+    );
+  }
 
   return (
     <motion.section

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import type { DisplayGuestReview } from "@/lib/guest-reviews";
 import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
+import { useMounted } from "@/lib/use-mounted";
 
 type Props = {
   reviews: DisplayGuestReview[];
@@ -23,10 +24,11 @@ function StarRow({ rating }: { rating: number }) {
 }
 
 export function ReviewsMarqueeClient({ reviews }: Props) {
+  const mounted = useMounted();
   const reduce = useHydrationSafeReducedMotion();
   const loop = [...reviews, ...reviews];
 
-  if (reduce) {
+  if (!mounted || reduce) {
     return (
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {reviews.slice(0, 6).map((r) => (

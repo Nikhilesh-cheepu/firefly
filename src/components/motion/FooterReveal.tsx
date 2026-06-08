@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
+import { useMounted } from "@/lib/use-mounted";
 
 type Props = {
   children: ReactNode;
@@ -11,7 +12,16 @@ type Props = {
 };
 
 export function FooterReveal({ children, className, id }: Props) {
+  const mounted = useMounted();
   const reduce = useHydrationSafeReducedMotion();
+
+  if (!mounted || reduce) {
+    return (
+      <footer id={id} className={className}>
+        {children}
+      </footer>
+    );
+  }
 
   return (
     <motion.footer

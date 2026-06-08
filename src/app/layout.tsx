@@ -3,7 +3,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { Bebas_Neue, DM_Sans, Geist_Mono, Manrope } from "next/font/google";
 import Script from "next/script";
 import { BassikChatEmbed } from "@/components/BassikChatEmbed";
-import { BassikChatFab } from "@/components/BassikChatFab";
+import { BassikChatFabLoader } from "@/components/BassikChatFabLoader";
 import { FacebookPixelHead } from "@/components/FacebookPixel";
 import { FacebookPixelPageView } from "@/components/FacebookPixelPageView";
 import { RestoreScrollOnLoad } from "@/components/RestoreScrollOnLoad";
@@ -87,7 +87,7 @@ export default function RootLayout({
         <FacebookPixelPageView />
         {children}
         <BassikChatEmbed />
-        <BassikChatFab />
+        <BassikChatFabLoader />
         <Analytics />
       </body>
     </html>
