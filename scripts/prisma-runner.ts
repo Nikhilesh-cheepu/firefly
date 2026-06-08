@@ -9,7 +9,13 @@ import { resolveDatabaseUrl } from "../src/lib/resolve-database-url";
 config({ path: resolve(process.cwd(), ".env.local") });
 config({ path: resolve(process.cwd(), ".env") });
 
-const url = resolveDatabaseUrl();
+function withRailwaySsl(url: string): string {
+  if (!/\.rlwy\.net|railway\.internal/i.test(url)) return url;
+  if (/[?&]sslmode=/i.test(url)) return url;
+  return `${url}${url.includes("?") ? "&" : "?"}sslmode=require`;
+}
+
+const url = withRailwaySsl(resolveDatabaseUrl());
 if (!url) {
   console.error(
     "No database URL resolved. Set DATABASE_URL and/or DATABASE_PUBLIC_URL (see .env.example).",

@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "npm run db:migrate-deploy || true; npm run build",
+    "db:probe": "tsx scripts/db-probe.ts",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",

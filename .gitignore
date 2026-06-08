@@ -21,6 +21,7 @@
 /build
 
 # misc
+.env.vercel.tmp
 .DS_Store
 *.pem
 
