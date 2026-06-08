@@ -35,7 +35,7 @@ export async function POST(req: Request) {
   const prisma = getPrisma();
   if (!prisma) {
     console.warn("[api/track] Skipped — no DATABASE_URL / DATABASE_PUBLIC_URL resolved");
-    return NextResponse.json({ ok: false, error: "db_not_configured" }, { status: 503 });
+    return NextResponse.json({ ok: false, error: "db_not_configured" }, { status: 200 });
   }
 
   const source = str(parsed.source) ?? str(parsed.path);
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
         /** Helps verify missing migrations in development / browser Network tab without opening server logs */
         prismaCode: process.env.NODE_ENV === "production" ? undefined : code,
       },
-      { status: 503 },
+      { status: 200 },
     );
   }
 }

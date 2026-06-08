@@ -9,7 +9,7 @@ export const bassikChatConfig = {
   topGap: 5,
   utmSource: "fireflyteluguclub",
   utmMedium: "website",
-  autoMount: true,
+  autoMount: false,
   label: "Chat with Firefly",
 } as const;
 
