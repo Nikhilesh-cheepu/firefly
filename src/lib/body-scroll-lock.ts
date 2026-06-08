@@ -1,12 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useLayoutEffect } from "react";
 
-/**
- * Desktop browsers usually scroll `document.documentElement`; mobile often uses `body`.
- * Locking only `body` can leave overflow stuck on `html` or behave inconsistently.
- * Ref-counted so nested modals (menu + sheet) don't unlock early.
- */
 let lockCount = 0;
 let savedHtmlOverflow = "";
 let savedBodyOverflow = "";
@@ -15,6 +10,41 @@ let savedBodyTop = "";
 let savedBodyLeft = "";
 let savedBodyRight = "";
 let savedBodyWidth = "";
+
+export function getBodyScrollLockCount(): number {
+  return lockCount;
+}
+
+/** True when Bassik chat sheet or our modal stack should own page scroll. */
+export function isExternalScrollLockActive(): boolean {
+  if (typeof document === "undefined") return false;
+  return Boolean(document.getElementById("bassik-chat-overlay"));
+}
+
+/**
+ * Clears stray inline scroll locks (e.g. Bassik embed) when no modal stack is active.
+ * Contact sheet close was fixing scroll because release() restored overflow — this does the same on load.
+ */
+export function ensurePageScrollable(force = false): void {
+  if (typeof document === "undefined") return;
+  if (!force && (lockCount > 0 || isExternalScrollLockActive())) return;
+
+  const html = document.documentElement;
+  const body = document.body;
+
+  if (body.style.position === "fixed") {
+    const top = Math.abs(parseInt(body.style.top || "0", 10)) || 0;
+    body.style.position = "";
+    body.style.top = "";
+    body.style.left = "";
+    body.style.right = "";
+    body.style.width = "";
+    if (top > 0) window.scrollTo(0, top);
+  }
+
+  html.style.removeProperty("overflow");
+  body.style.removeProperty("overflow");
+}
 
 function acquire() {
   if (typeof document === "undefined") return;
@@ -38,6 +68,7 @@ function release() {
   if (typeof document === "undefined") return;
   lockCount = Math.max(0, lockCount - 1);
   if (lockCount > 0) return;
+
   const html = document.documentElement;
   const body = document.body;
   html.style.overflow = savedHtmlOverflow;
@@ -54,10 +85,12 @@ function release() {
   savedBodyLeft = "";
   savedBodyRight = "";
   savedBodyWidth = "";
+
+  ensurePageScrollable(true);
 }
 
 export function useBodyScrollLock(active: boolean) {
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!active) return;
     acquire();
     return () => {

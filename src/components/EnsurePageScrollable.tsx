@@ -1,30 +1,42 @@
 "use client";
 
-import { useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
+import { ensurePageScrollable } from "@/lib/body-scroll-lock";
 
-/**
- * Bassik embed sets `body { position: fixed }` while open. If close fails, the home page cannot scroll.
- * Also clears stray overflow locks that are not ref-counted by our modal hook.
- */
+/** Clears stray Bassik / inline scroll locks on load and when returning to the tab. */
 export function EnsurePageScrollable() {
   useLayoutEffect(() => {
-    const html = document.documentElement;
-    const body = document.body;
+    ensurePageScrollable(true);
+  }, []);
 
-    if (body.style.position === "fixed") {
-      const top = Math.abs(parseInt(body.style.top || "0", 10)) || 0;
-      body.style.position = "";
-      body.style.top = "";
-      body.style.left = "";
-      body.style.right = "";
-      body.style.width = "";
-      window.scrollTo(0, top);
-    }
+  useEffect(() => {
+    ensurePageScrollable(true);
 
-    if (!document.getElementById("bassik-chat-overlay")) {
-      if (html.style.overflow === "hidden") html.style.overflow = "";
-      if (body.style.overflow === "hidden") body.style.overflow = "";
-    }
+    const onPageShow = () => ensurePageScrollable(true);
+    const onVisibility = () => {
+      if (!document.hidden) ensurePageScrollable(true);
+    };
+
+    const onBassikClose = (event: MessageEvent) => {
+      if (event.data?.type === "bassik-chat-close") {
+        window.setTimeout(() => ensurePageScrollable(true), 0);
+      }
+    };
+
+    window.addEventListener("pageshow", onPageShow);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("message", onBassikClose);
+
+    const t1 = window.setTimeout(() => ensurePageScrollable(true), 100);
+    const t2 = window.setTimeout(() => ensurePageScrollable(true), 500);
+
+    return () => {
+      window.removeEventListener("pageshow", onPageShow);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("message", onBassikClose);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
   }, []);
 
   return null;

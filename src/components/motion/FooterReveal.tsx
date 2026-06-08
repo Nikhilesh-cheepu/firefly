@@ -9,15 +9,16 @@ type Props = {
   children: ReactNode;
   className?: string;
   id?: string;
+  suppressHydrationWarning?: boolean;
 };
 
-export function FooterReveal({ children, className, id }: Props) {
+export function FooterReveal({ children, className, id, suppressHydrationWarning }: Props) {
   const mounted = useMounted();
   const reduce = useHydrationSafeReducedMotion();
 
   if (!mounted || reduce) {
     return (
-      <footer id={id} className={className}>
+      <footer id={id} className={className} suppressHydrationWarning={suppressHydrationWarning}>
         {children}
       </footer>
     );
@@ -27,6 +28,7 @@ export function FooterReveal({ children, className, id }: Props) {
     <motion.footer
       id={id}
       className={className}
+      suppressHydrationWarning={suppressHydrationWarning}
       initial={reduce ? undefined : { opacity: 0, y: 22 }}
       whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.2, margin: "-32px 0px -12px 0px" }}

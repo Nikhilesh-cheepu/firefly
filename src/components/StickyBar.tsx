@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { telHrefFromInput, waMeHrefFromInput } from "@/lib/indian-phone";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
+import { ensurePageScrollable } from "@/lib/body-scroll-lock";
 import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
 import type { SiteSettingsDTO } from "@/lib/site-data";
 import { HeroMuteIcon } from "@/components/HeroMuteIcon";
@@ -251,7 +252,10 @@ export function StickyBar({ settings, heroHasVideo = false }: Props) {
 
   const sheetActions = useMemo(() => buildSheetActions(settings), [settings]);
 
-  const closeSheet = useCallback(() => setSheetOpen(false), []);
+  const closeSheet = useCallback(() => {
+    setSheetOpen(false);
+    window.setTimeout(() => ensurePageScrollable(true), 0);
+  }, []);
 
   useBodyScrollLock(sheetOpen);
 

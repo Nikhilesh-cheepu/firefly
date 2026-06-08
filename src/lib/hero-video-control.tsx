@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -28,6 +29,10 @@ export function HeroVideoControlProvider({
   const [isVideoHero, setIsVideoHero] = useState(heroHasVideo);
   const [muted, setMuted] = useState(true);
   const toggleMuted = useCallback(() => setMuted((prev) => !prev), []);
+
+  useEffect(() => {
+    setIsVideoHero(heroHasVideo);
+  }, [heroHasVideo]);
 
   const value = useMemo(
     () => ({ isVideoHero, setIsVideoHero, muted, toggleMuted }),

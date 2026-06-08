@@ -59,9 +59,7 @@ export default async function Home() {
   const foodItems = FOOD_MENU_ITEMS;
   const beverageItems = BAR_MENU_ITEMS;
   const heroHasVideo =
-    heroSlides.length > 0
-      ? heroSlides[0]!.type === "VIDEO"
-      : Boolean(settings.heroVideoUrl);
+    heroSlides.some((slide) => slide.type === "VIDEO") || Boolean(settings.heroVideoUrl);
 
   return (
     <HeroVideoControlProvider heroHasVideo={heroHasVideo}>
@@ -95,6 +93,7 @@ export default async function Home() {
         <FooterReveal
           id="book"
           className="ff-shadow-soft scroll-mt-8 bg-ff-void/95 px-4 py-8 text-center text-xs text-ff-mist/70 backdrop-blur-sm sm:py-9"
+          suppressHydrationWarning
         >
           © {new Date().getFullYear()} Firefly · Telugu club
         </FooterReveal>
