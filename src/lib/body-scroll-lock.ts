@@ -10,6 +10,11 @@ import { useEffect } from "react";
 let lockCount = 0;
 let savedHtmlOverflow = "";
 let savedBodyOverflow = "";
+let savedBodyPosition = "";
+let savedBodyTop = "";
+let savedBodyLeft = "";
+let savedBodyRight = "";
+let savedBodyWidth = "";
 
 function acquire() {
   if (typeof document === "undefined") return;
@@ -18,6 +23,11 @@ function acquire() {
   if (lockCount === 0) {
     savedHtmlOverflow = html.style.overflow;
     savedBodyOverflow = body.style.overflow;
+    savedBodyPosition = body.style.position;
+    savedBodyTop = body.style.top;
+    savedBodyLeft = body.style.left;
+    savedBodyRight = body.style.right;
+    savedBodyWidth = body.style.width;
     html.style.overflow = "hidden";
     body.style.overflow = "hidden";
   }
@@ -32,8 +42,18 @@ function release() {
   const body = document.body;
   html.style.overflow = savedHtmlOverflow;
   body.style.overflow = savedBodyOverflow;
+  body.style.position = savedBodyPosition;
+  body.style.top = savedBodyTop;
+  body.style.left = savedBodyLeft;
+  body.style.right = savedBodyRight;
+  body.style.width = savedBodyWidth;
   savedHtmlOverflow = "";
   savedBodyOverflow = "";
+  savedBodyPosition = "";
+  savedBodyTop = "";
+  savedBodyLeft = "";
+  savedBodyRight = "";
+  savedBodyWidth = "";
 }
 
 export function useBodyScrollLock(active: boolean) {

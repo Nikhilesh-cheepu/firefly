@@ -1,7 +1,8 @@
 "use client";
 
 import type { HeroSlide, HeroSlideType } from "@prisma/client";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { useHeroVideoControl } from "@/lib/hero-video-control";
 export type HeroCarouselProps = {
   slides: HeroSlide[];
   fallbackVideo: string | null;
@@ -56,13 +57,20 @@ export function HeroCarousel({
   fallbackVideo,
   fallbackPoster,
 }: HeroCarouselProps) {
-  const [muted, setMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const heroVideo = useHeroVideoControl();
+  const muted = heroVideo?.muted ?? true;
 
   const primary = useMemo(
     () => pickPrimarySlide(slides, fallbackVideo, fallbackPoster),
     [slides, fallbackVideo, fallbackPoster],
   );
+  const isVideo = primary?.type === "VIDEO";
+
+  useEffect(() => {
+    heroVideo?.setIsVideoHero(Boolean(isVideo));
+    return () => heroVideo?.setIsVideoHero(false);
+  }, [heroVideo, isVideo]);
 
   if (!primary) {
     return (
@@ -77,8 +85,6 @@ export function HeroCarousel({
       </section>
     );
   }
-
-  const isVideo = primary.type === "VIDEO";
 
   return (
     <section
@@ -105,41 +111,6 @@ export function HeroCarousel({
       )}
 
       <div className="absolute inset-0 bg-gradient-to-b from-[#03080f]/20 via-transparent to-[#03080f]/45" />
-
-      {isVideo ? (
-        <div className="absolute bottom-[calc(6.25rem+env(safe-area-inset-bottom))] right-4 z-20 sm:right-6">
-          <button
-            type="button"
-            onClick={() => setMuted((prev) => !prev)}
-            aria-pressed={!muted}
-            aria-label={muted ? "Unmute hero video" : "Mute hero video"}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ff-glow/45 bg-[#03080f]/90 text-ff-glow shadow-[0_0_20px_rgba(200,255,120,0.2)] backdrop-blur-sm transition active:scale-[0.96]"
-          >
-            {muted ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path
-                  d="M3 9v6h4l5 4V5L7 9H3zM16.5 8.5l5 7M21.5 8.5l-5 7"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path
-                  d="M3 9v6h4l5 4V5L7 9H3zM16 9.5a4.5 4.5 0 010 5M18.8 7a8 8 0 010 10"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            )}
-          </button>
-        </div>
-      ) : null}
-
     </section>
   );
 }

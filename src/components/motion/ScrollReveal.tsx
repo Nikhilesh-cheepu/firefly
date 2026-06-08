@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
+import { useMounted } from "@/lib/use-mounted";
 
 type Props = {
   children: ReactNode;
@@ -14,9 +15,10 @@ type Props = {
 };
 
 export function ScrollReveal({ children, className, delay = 0, y = 20 }: Props) {
+  const mounted = useMounted();
   const reduce = useHydrationSafeReducedMotion();
 
-  if (reduce) {
+  if (!mounted || reduce) {
     return <div className={className}>{children}</div>;
   }
 

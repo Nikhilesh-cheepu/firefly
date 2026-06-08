@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import { HomeEventsBlock } from "@/app/HomeEventsBlock";
 import { MenuSheetsProvider } from "@/components/menu/MenuSheetsProvider";
+import { HeroVideoControlProvider } from "@/lib/hero-video-control";
 import { BridgeReveal } from "@/components/motion/BridgeReveal";
 import { FooterReveal } from "@/components/motion/FooterReveal";
-import { ScrollReveal } from "@/components/motion/ScrollReveal";
 import { SectionReveal } from "@/components/motion/SectionReveal";
 import { StickyBar } from "@/components/StickyBar";
 import { EventsSectionSkeleton } from "@/components/sections/EventsSectionSkeleton";
@@ -60,13 +60,14 @@ export default async function Home() {
   const beverageItems = BAR_MENU_ITEMS;
 
   return (
+    <HeroVideoControlProvider>
     <MenuSheetsProvider
       happyHourGroups={DUMMY_HAPPY_HOURS}
       foodItems={foodItems}
       beverageItems={beverageItems}
       whatsappRaw={settings.whatsapp}
     >
-      <main className="flex-1 pb-40 [overflow-anchor:none] [padding-left:max(0px,env(safe-area-inset-left))] [padding-right:max(0px,env(safe-area-inset-right))] sm:pb-36">
+      <main className="pb-40 [overflow-anchor:none] [padding-left:max(0px,env(safe-area-inset-left))] [padding-right:max(0px,env(safe-area-inset-right))] sm:pb-36">
         <HeroCarousel
           slides={heroSlides}
           fallbackVideo={settings.heroVideoUrl}
@@ -96,5 +97,6 @@ export default async function Home() {
       </main>
       <StickyBar settings={settings} />
     </MenuSheetsProvider>
+    </HeroVideoControlProvider>
   );
 }

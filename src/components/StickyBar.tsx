@@ -8,6 +8,8 @@ import { telHrefFromInput, waMeHrefFromInput } from "@/lib/indian-phone";
 import { useBodyScrollLock } from "@/lib/body-scroll-lock";
 import { useHydrationSafeReducedMotion } from "@/lib/use-hydration-safe-reduced-motion";
 import type { SiteSettingsDTO } from "@/lib/site-data";
+import { HeroMuteIcon } from "@/components/HeroMuteIcon";
+import { useHeroVideoControl } from "@/lib/hero-video-control";
 import { trackEvent } from "@/lib/track-client";
 
 type Props = {
@@ -240,6 +242,7 @@ function buildSheetActions(settings: SiteSettingsDTO): SheetAction[] {
 
 export function StickyBar({ settings }: Props) {
   const reduce = useHydrationSafeReducedMotion();
+  const heroVideo = useHeroVideoControl();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const sheetActions = useMemo(() => buildSheetActions(settings), [settings]);
@@ -267,15 +270,17 @@ export function StickyBar({ settings }: Props) {
     : { type: "spring" as const, stiffness: 420, damping: 34 };
 
   const bookClassName =
-    "inline-flex min-h-[42px] w-full items-center justify-center rounded-full bg-gradient-to-r from-ff-glow to-ff-glow-dim px-3 py-2 text-[13px] font-semibold text-ff-void ff-shadow-primary";
+    "inline-flex min-h-[42px] w-full items-center justify-center rounded-full bg-gradient-to-r from-ff-glow to-ff-glow-dim px-2.5 py-2 text-[12px] font-semibold text-ff-void ff-shadow-primary sm:px-3 sm:text-[13px]";
   const bookLabelNode = (
-    <span className="inline-flex items-center gap-2 whitespace-nowrap">
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
       <span>Book table</span>
-      <span className="rounded-full border border-ff-glow/35 bg-ff-glow/15 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[0.08em] text-ff-void/90">
+      <span className="rounded-full border border-ff-glow/35 bg-ff-glow/15 px-1.5 py-0.5 text-[7px] font-semibold uppercase tracking-[0.08em] text-ff-void/90 sm:px-2 sm:text-[8px]">
         5% off
       </span>
     </span>
   );
+  const compactActionClassName =
+    "inline-flex min-h-[42px] shrink-0 items-center justify-center rounded-full px-2.5 text-[12px] font-semibold leading-tight ff-shadow-soft transition-colors sm:px-3 sm:text-[13px]";
   const onBookClick = useCallback(() => {
     trackEvent({ eventType: "BOOKING_CLICK", source: "sticky_bar_book" });
   }, []);
@@ -336,7 +341,7 @@ export function StickyBar({ settings }: Props) {
           animate={undefined}
           aria-label="Quick actions"
         >
-          <div className="flex items-stretch gap-2">
+          <div className="flex items-stretch gap-1.5 sm:gap-2">
             <motion.div
               className="min-w-0 flex-1"
               whileHover={hover}
@@ -356,7 +361,10 @@ export function StickyBar({ settings }: Props) {
                   source: "sticky_bar_book_event",
                 })
               }
-              className="inline-flex min-h-[42px] shrink-0 items-center justify-center rounded-full border border-ff-violet/40 bg-gradient-to-r from-ff-violet/65 to-[#3f39b5] px-3 text-[13px] font-semibold leading-tight text-white ff-shadow-soft transition-colors hover:border-ff-violet/60 hover:brightness-110 sm:px-3.5"
+              className={
+                compactActionClassName +
+                " border border-ff-violet/40 bg-gradient-to-r from-ff-violet/65 to-[#3f39b5] text-white hover:border-ff-violet/60 hover:brightness-110"
+              }
               whileHover={hover}
               whileTap={tap}
               transition={spring}
@@ -366,7 +374,10 @@ export function StickyBar({ settings }: Props) {
             <motion.button
               type="button"
               onClick={() => setSheetOpen(true)}
-              className="inline-flex min-h-[42px] shrink-0 items-center justify-center rounded-full border border-ff-mint/45 bg-gradient-to-r from-[#0f3a2d] to-[#14503f] px-3 text-[13px] font-semibold leading-tight text-ff-mint ff-shadow-soft transition-colors hover:border-ff-mint/70 hover:brightness-110 sm:px-3.5"
+              className={
+                compactActionClassName +
+                " border border-ff-mint/45 bg-gradient-to-r from-[#0f3a2d] to-[#14503f] text-ff-mint hover:border-ff-mint/70 hover:brightness-110"
+              }
               whileHover={hover}
               whileTap={tap}
               transition={spring}
@@ -375,6 +386,20 @@ export function StickyBar({ settings }: Props) {
             >
               Contact us
             </motion.button>
+            {heroVideo?.isVideoHero ? (
+              <motion.button
+                type="button"
+                onClick={heroVideo.toggleMuted}
+                aria-pressed={!heroVideo.muted}
+                aria-label={heroVideo.muted ? "Unmute hero video" : "Mute hero video"}
+                className="inline-flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full border border-ff-glow/35 bg-[#071018]/95 text-ff-glow ff-shadow-soft backdrop-blur-sm transition-colors hover:border-ff-glow/55 hover:bg-[#0a1520]"
+                whileHover={hover}
+                whileTap={tap}
+                transition={spring}
+              >
+                <HeroMuteIcon muted={heroVideo.muted} />
+              </motion.button>
+            ) : null}
           </div>
         </motion.nav>
       </div>

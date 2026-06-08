@@ -6,6 +6,7 @@ import { BassikChatEmbed } from "@/components/BassikChatEmbed";
 import { BassikChatFabLoader } from "@/components/BassikChatFabLoader";
 import { FacebookPixelHead } from "@/components/FacebookPixel";
 import { FacebookPixelPageView } from "@/components/FacebookPixelPageView";
+import { EnsurePageScrollable } from "@/components/EnsurePageScrollable";
 import { RestoreScrollOnLoad } from "@/components/RestoreScrollOnLoad";
 import "./globals.css";
 
@@ -74,15 +75,16 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${display.variable} ${dmSans.variable} ${geistMono.variable} ${manrope.variable} h-full bg-ff-hero-void antialiased`}
+      className={`${display.variable} ${dmSans.variable} ${geistMono.variable} ${manrope.variable} min-h-dvh bg-ff-hero-void antialiased`}
     >
       <head>
         <FacebookPixelHead />
       </head>
-      <body className="min-h-full flex flex-col [overflow-anchor:none] bg-ff-hero-void text-zinc-50">
+      <body className="min-h-dvh [overflow-anchor:none] bg-ff-hero-void text-zinc-50">
         <Script id="firefly-scroll-bootstrap" strategy="beforeInteractive">
           {`(function(){try{function isHome(){var p=location.pathname||'';return p==='/'||p===''}function stripHash(){if(location.hash)history.replaceState(null,'',location.pathname+(location.search||''))}function run(){if(isHome())stripHash();else if(location.hash==='#book')stripHash();else if(location.hash)return;if('scrollRestoration'in history)history.scrollRestoration='manual';scrollTo(0,0);document.documentElement.scrollTop=0;document.documentElement.scrollLeft=0;document.body.scrollTop=0;document.body.scrollLeft=0}run();addEventListener('pageshow',function(){if(isHome())stripHash();else if(location.hash==='#book')stripHash();else if(location.hash)return;if('scrollRestoration'in history)history.scrollRestoration='manual';scrollTo(0,0);document.documentElement.scrollTop=0;document.documentElement.scrollLeft=0;document.body.scrollTop=0;document.body.scrollLeft=0});}catch(_){}})();`}
         </Script>
+        <EnsurePageScrollable />
         <RestoreScrollOnLoad />
         <FacebookPixelPageView />
         {children}
